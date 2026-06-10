@@ -1,4 +1,4 @@
 interface:
   display_name: "SS13 TGUI"
-  short_description: "Review, build, and debug BYOND/DM + React tgui interfaces across SS13 forks (tgui-core and in-tree ports)"
-  default_prompt: "Review this SS13 TGUI interface (the DM ui_interact/tgui_interact + ui_data/ui_static_data/ui_act backend and the React + SCSS frontend) for correctness, idiomatic codebase-native framework use, and overengineering. First confirm the repo's local conventions (entry-proc name, component import path), then propose a focused fix plan that prefers deleting redundant machinery over adding it."
+  short_description: "Review, build, and debug secure BYOND/DM + React tgui interfaces across SS13 forks"
+  default_prompt: "Review this SS13 TGUI interface (the DM ui_interact/tgui_interact + ui_data/ui_static_data/ui_state/ui_act backend and the React + SCSS frontend) for correctness, action security, JSON data shape, React state usage, idiomatic codebase-native framework use, and overengineering. First confirm the repo's local conventions, then propose a focused fix plan that prefers deleting redundant machinery over adding it."

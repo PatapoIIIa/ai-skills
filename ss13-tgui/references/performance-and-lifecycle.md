@@ -43,7 +43,7 @@ If you disabled autoupdate, the whole update story should collapse to: "on chang
 
 These are different problems with different fixes. Misdiagnosing wastes effort on the wrong layer.
 
-- **First open is slow (~3-4s):** a known BYOND 516 <-> WebView communication + asset-transfer limitation. The bundle (`tgui.bundle.js`, ~780 KB), fonts (~1.2 MB), and spritesheets are pushed and then cached by the webview. It is *not* your React render or your DM payload. You cannot "debug it away" in interface code; it persists until assets shrink or BYOND updates. Do not rewrite render logic chasing it. (A genuine *bug* in the asset path is different — e.g. Vanderlin #6659 was a real asset-cache-confirmation timeout, fixed in the asset code, not the interface.)
+- **First open is slow (~3-4s):** a known BYOND 516 <-> WebView communication + asset-transfer limitation. The bundle, fonts, and spritesheets are pushed and then cached by the webview. It is *not* automatically evidence that the React render or DM payload is slow. Do not rewrite interface render logic before separating this baseline from a genuine asset-path bug such as an asset-cache-confirmation timeout.
 - **Per-click / per-update is slow:** your update is doing too much work relative to peers — an oversized `ui_data` payload, recomputing everything every action, or an update fired far too often. This is the layer where payload-shaping and (measured) caching or disabling autoupdate help.
 
 A useful tell: if only the *first* interaction lags and everything after is smooth, suspect assets/WebView. If *every* click lags, suspect your update.
@@ -59,7 +59,7 @@ Assets sent once are cached by the webview for the session. Do not fight this wi
 
 Default to **no custom cache.** Add one only when you have measured a real cost. The decisive question is *who the cached value belongs to*:
 
-- **Shared + immutable -> a global cache is fine.** Data that is identical for every user and effectively never changes (e.g. a static metadata payload built once from game definitions) can be built once and stored globally; it is content-addressed by being the same for everyone. (Vanderlin's `GLOB.attribute_menu_static_payload` is a legitimate example — it caches the shared static menu metadata, not per-user state.)
+- **Shared + immutable -> a global cache is fine.** Data that is identical for every user and effectively never changes (e.g. a static metadata payload built once from game definitions) can be built once and stored globally. The reviewed redesign retained this kind of shared metadata cache while removing its per-user dynamic cache.
 - **Per-user / dynamic -> almost never.** Updates are on-demand, so the dynamic payload is recomputed only when something changed — a per-user cache usually buys nothing and adds a stale-data surface. "An interface shouldn't care who's using it, only the data it's given," so per-user image/data caches are justified only when the content is genuinely personalized, and even then keyed by player/version, not a shared name.
 - **Do not** globally cache tiny static lists or trivial pure ops (e.g. sanitizing ~20 icon names once at menu build). The compute is noise; the cache is pure complexity.
 - If you *do* cache a dynamic payload, key on **meaningful serialized state** (stringify the relevant info and diff it), never on a vague "total updates" counter.
@@ -70,6 +70,6 @@ A "generation counter + per-user last-sent generation" scheme is tempting for di
 
 - It is easy to bump in the wrong place, miss a mutation path, or desync per-user state and ship stale data.
 - It reintroduces lifecycle bookkeeping that TGUI's on-demand updates already make unnecessary.
-- In PR #6578 this exact mechanism was added, then deleted on review — updates are on-demand anyway, so the cache wasn't earning its complexity, and a counter is not a sound cache key (it doesn't tell you whether the *content* changed).
+- In a reviewed redesign this exact mechanism was added, then deleted — updates were already on-demand, so the cache did not earn its complexity, and a counter was not a sound cache key because it did not describe whether the content changed.
 
 If you believe you need it, prove the cost first, then key the cache on serialized content, not a counter.

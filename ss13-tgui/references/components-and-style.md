@@ -7,6 +7,9 @@ Read this when writing or reviewing the React/SCSS side of an interface.
 - Use components, raw HTML as a rare exception
 - The typed data contract
 - useBackend / act
+- Component boundaries
+- React state: local, shared, and derived
+- Testable frontend logic
 - SCSS: scoped, minimal, consistent
 - Scaling and absolute pixels
 - Theming alignment
@@ -18,7 +21,7 @@ The component *vocabulary* is the same everywhere, but it ships two ways:
 - **tgui-core forks** (tgstation, Vanderlin, BandaStation): components are an npm dependency, imported from `tgui-core/components`. There is no in-tree component library to edit; styling/scaling/theming live in tgui-core. This is modern /tg/.
 - **In-tree ports** (cmss13, and older Azure-derived code): components live in the repo at `tgui/components` (e.g. `Box.tsx`, `Button.tsx`, ...) and are imported from `tgui/components`. There is no `tgui-core` dependency, and component styles live in the codebase — so per-component style edits are a real thing here, unlike in tgui-core forks.
 
-This is exactly what the Great Developer described in review: "azure's tgui port is older... they still have component styles in the codebase while we use tgui-core." **Match the local convention** — grep a neighbor's import line before writing one. The rest of this file assumes you have done that and uses the shared component names.
+Older ports may still keep component styles in-tree while modern forks consume `tgui-core`. **Match the local convention** — grep a neighbor's import line before writing one. The rest of this file assumes you have done that and uses the shared component names.
 
 ## Use components, raw HTML as a rare exception
 
@@ -60,12 +63,33 @@ Typing `Data` documents the backend contract, catches missing-field bugs, and ma
 
 Use the project's established `useBackend()` and `act(...)` style. Read `data`, call `act('verb', { ... })`. Keep the component reading data and dispatching actions; don't smuggle gameplay logic into the frontend.
 
+## Component boundaries
+
+When an interface grows, split it into focused components with explicit typed props. Keep each component responsible for one section, repeated row, modal, or detail view rather than allowing a single render function to accumulate hundreds of lines.
+
+Prefer passing already-selected domain data into presentational children. Repeating `useBackend()` in every child is valid when the local codebase uses that pattern or the child genuinely needs `act`, but it can hide dependencies and make extraction/testing harder. Follow neighboring modern interfaces rather than old examples that require a `context` argument.
+
+## React state: local, shared, and derived
+
+- In modern TGUI v5, use React's `useState` and `useEffect` for genuine local interaction or asynchronous lifecycle work.
+- Treat `useLocalState` as deprecated unless the current fork still requires it. Do not migrate an older fork blindly; verify its TGUI generation first.
+- Use `useSharedState` only when UI-local input is intentionally shared by everyone viewing the same in-character machine or object. Do not use it as a general replacement for local state or authoritative DM state.
+- Do not mirror backend data, props, or another state value into extra state. Compute derived values directly during render.
+- Do not add an effect merely to keep one state variable synchronized with another. If `isEven` is `count % 2 === 0`, it is a variable, not state.
+- Keep authoritative gameplay state in DM. React state may control presentation such as tabs, filters, expanded rows, drafts, or transient animation, but must not become the security or game-state source of truth.
+
+## Testable frontend logic
+
+Extract non-trivial pure transforms from JSX when they encode meaningful behavior: filtering/sorting payloads, grouping records, formatting derived labels, or mapping backend state to a view model. These functions can receive focused `.test.ts`/`.spec.ts` coverage when the repository's test setup supports it.
+
+Do not add tests for trivial markup or restate TypeScript's type checks. UI integration support varies by fork, so copy the local test runner and conventions rather than assuming `/tg/`'s current Jest setup exists everywhere.
+
 ## SCSS: scoped, minimal, consistent
 
 - Scope styles to the interface's root class; keep them minimal.
 - Reuse existing interface styles and variables rather than re-declaring colors and spacing.
-- A large hand-written stylesheet is a warning sign. The PR #6578 sheet hit ~1100 lines and was flagged as reading "AI gen" with "a lot of redundancy and rewriting of stuff tgui already does." Shrinking it by adopting `Stack`/`Section`/`Box` is usually the right move — most of those lines re-implement layout the components already provide.
-- When a codebase has a shared "paper"/theme stylesheet, build on it instead of inventing a parallel palette. (Vanderlin points new paper/guidebook-style interfaces at `RecipeBook.scss` as the base; borrow its variables, override only what you must — ideally it becomes its own theme.)
+- A large hand-written stylesheet is a warning sign. One reviewed redesign exceeded a thousand lines of SCSS, largely reimplementing layout already provided by TGUI. Shrinking it by adopting `Stack`/`Section`/`Box` is usually the right move.
+- When a codebase has a shared "paper"/theme stylesheet, build on it instead of inventing a parallel palette. Borrow its variables and override only what the interface actually needs.
 
 ## Scaling and absolute pixels
 

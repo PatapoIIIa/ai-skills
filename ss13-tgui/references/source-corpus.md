@@ -4,12 +4,12 @@ Read this to calibrate "is this rule universal or fork-local?" before applying a
 
 ## Repos sampled (provenance)
 
-| Repo | Role here | Commit (HEAD at sampling) | tgui-core? | Backend entry proc | Components import |
+| Repo | Role here | Sampled snapshot | tgui-core? | Backend entry proc | Components import |
 | --- | --- | --- | --- | --- | --- |
-| tgstation | Canonical modern /tg/ baseline | `2f2436b9a31` (2026-06-08) | yes (^5.10) | `ui_interact` | `tgui-core/components` |
-| Vanderlin | Working fork; PR #6578 case study | `8acb06cff` (2026-06-08, branch `TGUI-fix`) | yes (^5.6) | `ui_interact` | `tgui-core/components` |
-| cmss13-MARINES | Independent codebase, older port | `eca7ab9b61` (2026-04-26) | **no** | **`tgui_interact`** | **`tgui/components`** (local) |
-| BandaStation-Kagelite_DEV | /tg/-derived fork-of-fork | `81c55d3f549` (2026-05-31) | yes (^5.10) | `ui_interact` | `tgui-core/components` |
+| tgstation | Canonical modern /tg/ baseline | June 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
+| Vanderlin | tgui-core fork and reviewed redesign sample | June 2026 | yes (^5.6) | `ui_interact` | `tgui-core/components` |
+| cmss13-MARINES | Independent codebase, older port | April 2026 | **no** | **`tgui_interact`** | **`tgui/components`** (local) |
+| BandaStation-Kagelite_DEV | /tg/-derived fork-of-fork | May 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
 
 The single most important takeaway from this table: **the same component vocabulary and lifecycle ride on top of fork-local names and import paths.** cmss13 renamed the framework entry proc to `tgui_interact` (169 files vs 16 `ui_interact`) and ships its components in-tree at `tgui/components` instead of depending on `tgui-core`. An agent that hardcodes `ui_interact` + `tgui-core/components` from memory will write code that does not compile in cmss13. Always grep a neighboring interface in the *current* repo for the entry-proc name and the component import path before writing.
 
@@ -26,7 +26,7 @@ These files exist with the same shape in Vanderlin and BandaStation. cmss13's eq
 ## Backend examples sampled
 
 - tgstation: `code/game/machinery/announcement_system.dm` (clean `ui_interact` + split static/dynamic + `ui_act`), `code/game/machinery/autolathe.dm`, `code/modules/research/machinery/_production.dm` and `code/modules/research/rdconsole.dm` (real `ui_assets` returning spritesheets; rdconsole carries the comment *"heavy data from this proc should be moved to static data when possible"*), `code/modules/power/apc/apc_main.dm` (`SStgui.update_uis(src)` on external state change).
-- Vanderlin: `code/datums/attributes/__holder_ui.dm` (the AttributeMenu backend in its corrected state — see case study), `code/datums/attributes/attributes/attribute_modifier.dm:148` (`SStgui.update_uis(src)` at the change site).
+- Vanderlin: a corrected datum-backed interface using the standard open path, split static/dynamic data, and `SStgui.update_uis(src)` at the external mutation site (see the anonymized case study).
 - cmss13: `code/game/machinery/computer/camera_console.dm`, `demo_sim.dm`, `dropship_weapons.dm` (all `tgui_interact`).
 - BandaStation: same `ui_interact` shape as /tg/ (430 files); spot-checked against /tg/ equivalents.
 
@@ -35,7 +35,7 @@ Counts (proc definitions found): `try_update_ui` present in essentially every in
 ## Frontend examples sampled
 
 - tgstation: `interfaces/Canister.tsx` (typed `Data` with `BooleanLike`, `useBackend<Data>()`, `Window` layout — the canonical idiom), `interfaces/AntagInfoHeretic.tsx` (one of the ~18/299 files that deliberately use a raw `<div>` for free-form text).
-- Vanderlin: `interfaces/AttributeMenu.tsx` (imports from `tgui-core/components`; still 994 lines + ~78 raw tags + 1176-line SCSS on this WIP branch — the frontend cleanup is the still-pending half of #6578).
+- Vanderlin: a large custom skills interface (imports from `tgui-core/components`; the sampled version still had extensive raw HTML and a thousand-plus-line SCSS file, making frontend cleanup the remaining work).
 - cmss13: `interfaces/Vending.tsx`, `interfaces/PowerMonitor.tsx` (import `Box/Button/Section/Stack/Table` from local `tgui/components`, `useBackend` from `tgui/backend`, `Window` from `tgui/layouts` — same vocabulary, local source).
 - BandaStation: `interfaces/Vending.tsx`, `interfaces/AirAlarm.tsx` (`tgui-core/components`, /tg/-identical idiom).
 
@@ -61,7 +61,7 @@ Observed everywhere: components from a single import (`Box`, `Button`, `Section`
 
 ### Vanderlin-local conventions
 - tgui-core fork (^5.6), `ui_interact`, `tgui-core/components` — tracks /tg/.
-- New "paper"/guidebook-style interfaces are expected to build on `RecipeBook.scss` rather than invent a palette (reviewer direction, see case study).
+- New "paper"/guidebook-style interfaces should build on the existing shared stylesheet rather than invent a parallel palette (see the anonymized case study).
 - Small interface set (~22), so "read the neighbors" means a smaller sample — widen to /tg/ when local examples are thin.
 
 ### cmss13-local conventions (do NOT transfer to tgui-core forks)
@@ -82,6 +82,6 @@ Observed everywhere: components from a single import (`Box`, `Button`, `Section`
 - Raw HTML where a component fits; ~1000+ line SCSS re-implementing layout tgui-core already does; absolute-pixel layout; a bespoke scaling control duplicating an existing UI-scaling var.
 
 ### Uncertain / verify-locally
-- **Caching shared immutable static data globally is acceptable; per-user dynamic data is not.** Vanderlin's surviving `GLOB.attribute_menu_static_payload` caches the same-for-everyone static metadata once — defensible. The deleted caches were the per-user dynamic payload and a generation counter. The dividing line: is the cached value identical for all users and effectively immutable? Then a global cache is fine. Verify the value really is shared/immutable before trusting one.
-- **Sending a sanitized spritesheet CSS-class string from the backend** (as the AttributeMenu static payload does for `icon`) sits on the data/presentation boundary: the class is the asset-pipeline handle for a sprite, not arbitrary styling. Acceptable when it mirrors the spritesheet key; reconsider if it encodes layout. Verify against how sibling interfaces reference spritesheet sprites.
+- **Caching shared immutable static data globally is acceptable; per-user dynamic data is not.** In the reviewed redesign, a same-for-everyone metadata payload cache survived while a per-user dynamic cache and generation counter were removed. The dividing line: is the cached value identical for all users and effectively immutable? Then a global cache is fine. Verify the value really is shared and immutable before trusting one.
+- **Sending a sanitized spritesheet CSS-class string from the backend** sits on the data/presentation boundary: the class is the asset-pipeline handle for a sprite, not arbitrary styling. Acceptable when it mirrors the spritesheet key; reconsider if it encodes layout. Verify against how sibling interfaces reference spritesheet sprites.
 - Whether a given interface *needs* the static/dynamic split: depends on payload size. Don't add it reflexively to a small UI.

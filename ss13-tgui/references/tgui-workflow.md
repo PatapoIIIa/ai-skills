@@ -6,7 +6,9 @@ The long-form companion to `SKILL.md`. Read it when implementing a new interface
 - Step 0: learn the local names
 - The data-driven contract
 - Backend procs and what belongs in each
+- UI state and action security
 - The standard entry-proc pattern (and why deviating is usually wrong)
+- DM list shapes after JSON
 - Frontend split
 - Deriving presentation in the frontend
 - Full review checklist with rationale
@@ -39,12 +41,40 @@ If you find the backend emitting CSS classes, layout anchor keys, or display lab
 | `ui_static_data(user)` | Heavy, rarely-changing metadata | Names, descriptions, icon ids, category structure |
 | `ui_data(user)` | Dynamic state | Current values, toggles, selection |
 | `ui_assets(user)` | Static assets | Spritesheets, simple assets via the asset cache |
-| `ui_act(action, params, ui, state)` | Handle interactions | Mutate state; return TRUE to signal handled -> triggers `update_uis` |
+| `ui_state(user)` | Interaction policy | Range, consciousness, access, inventory, remote-use policy |
+| `ui_act(action, params, ui, state)` | Handle interactions | Call parent, validate hostile input, mutate state, return TRUE when handled |
 
 Splitting `ui_static_data` from `ui_data` keeps each dynamic update small and avoids resending immutable metadata every refresh — /tg/'s `rdconsole.dm` even carries the comment *"heavy data from this proc should be moved to static data when possible."* But it is an **optimization for heavy payloads, not a mandate**: ~210 of tgstation's interfaces use it, far from all of them. Two caveats:
 
 - Static data is sent on open and cached frontend-side; it is **not** re-sent by autoupdate. If it changes, call `update_static_data(user)` (or `update_static_data_for_all_viewers()`). See `references/performance-and-lifecycle.md`.
 - Only put genuinely stable data in `ui_static_data`. If a field changes during normal play, it belongs in `ui_data`.
+
+## UI state and action security
+
+`ui_state()` decides whether the user may see or interact with the UI. Use the repo's existing state datums and neighboring interfaces for range, consciousness, inventory, access, and remote-use rules. Do not reproduce authorization in React: frontend visibility is presentation, not security.
+
+Treat every `action` and `params` value as client-controlled input:
+
+```dm
+/datum/thing/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
+	. = ..()
+	if(.)
+		return
+
+	switch(action)
+		if("set_amount")
+			var/amount = text2num(params["amount"])
+			if(!isnum(amount))
+				return FALSE
+			amount = clamp(amount, MIN_AMOUNT, MAX_AMOUNT)
+			// Mutate only after validation.
+			. = TRUE
+```
+
+- Always follow the local parent-call pattern. In modern `/tg/`, the parent rejects actions when the UI is not interactive or the caller is not the UI user.
+- Validate types, ranges, membership, permissions, and referenced objects on the backend. A disabled or hidden button is not an authorization check.
+- Return truthy only for an action that was handled. That return is also the normal signal for TGUI to update the open viewers.
+- Copy the local conversion idiom (`text2num`, `text2path`, `locate`, helpers, or native typed params) because payload types differ between TGUI generations. Never assume every param is a string.
 
 ## The standard entry-proc pattern
 
@@ -62,16 +92,28 @@ Why this is the whole pattern, and why custom machinery around it is a mistake:
 - **You do not need to track the UI yourself.** Open UIs live in `src.open_uis`. Storing a long-lived `datum/tgui` reference on a domain datum couples gameplay state to UI lifecycle and goes stale — /tg/ never does it.
 - **You do not need to dedupe windows.** If a user can open two of the same menu, something upstream of `try_update_ui` is broken. Fix the root cause; do not add a scanner.
 
+## DM list shapes after JSON
+
+Design the DM payload for the TypeScript operation that will consume it:
+
+- A sequential DM list becomes a JavaScript array. Use this for ordered collections that the frontend will `map`, `filter`, or sort.
+- An associative DM list becomes a JavaScript object. Use this for records and key-based lookup, and type it as `Record<string, T>` or a named object shape.
+- At boundaries, default missing collections to `[]` or `{}` as appropriate. Do not call array methods on an associative-list payload.
+- DM booleans arrive as numeric-like values in many forks; type them with the local `BooleanLike` equivalent rather than `boolean`.
+
+Prefer sending a clean array of records when ordering and iteration are the primary use. Prefer an object when stable keyed lookup is the actual contract; do not mechanically convert every associative list.
+
 ## Frontend split
 
 - `useBackend()` (from the local backend module) for `data` and `act`.
 - Type the payload: `type Data = { ... }`, `const { act, data } = useBackend<Data>();`, with `BooleanLike` for DM booleans. This is the standard idiom across tgui-core forks and cmss13 alike.
 - Render from `data`. Treat fields as optional and tolerate omitted keys — TGUI shallow-merges `data` between updates, so a `ui_data` that omits an unchanged block leaves the previous value intact frontend-side. Guard with `|| {}` / `|| []` defaults.
+- Split a large interface into focused components with explicit props. Keep backend access near the interface boundary unless a child genuinely needs to dispatch/read shared backend state.
 - Memoize derived structures (`useMemo`) and heavy components (`memo`) when a profile shows churn — not preemptively.
 
 ## Deriving presentation in the frontend
 
-If a value can be computed from data already present, compute it in TS — don't add a backend field. Concrete examples from PR #6578:
+If a value can be computed from data already present, compute it in TS — don't add a backend field. Examples from a reviewed redesign:
 
 - `anchor` (which CSS position class a stat seal uses) was sent from DM. It is just `name.toLowerCase()` — derive it in TS.
 - `seal_label` (the "Strength (STR)" string) was hand-built in DM with a hardcoded name->label map. After the stat `shorthand` values were fixed upstream, the label is simply `name` + `shorthand` — build it in TS.
@@ -83,13 +125,17 @@ Sending these from the backend made the DM aware of frontend layout and created 
 1. **Local names** — entry proc (`ui_interact`/`tgui_interact`) and component imports match the repo's neighbors?
 2. **Entry-proc shape** — matches the local `try_update_ui` pattern? Anything extra (refs, scanners) is suspect.
 3. **Duplicate windows** — handled by TGUI, not custom code? Custom dedupe usually masks a broken open path.
-4. **Update routing** — `ui_act` return value + `SStgui.update_uis(src)` instead of manually grabbing a UI and `send_update()`? If static data changed, is `update_static_data()` called?
-5. **Autoupdate** — if off, is there a complete manual update path (`SStgui.update_uis(src)` at every external change site)?
-6. **Static vs dynamic** — heavy metadata in `ui_static_data`, volatile state in `ui_data`, split only where the payload justifies it?
-7. **Data, not presentation** — backend free of CSS classes / layout anchors / display labels that TS or CSS can derive?
-8. **Assets** — icons via the project's spritesheet/asset pipeline through `ui_assets`?
-9. **Caching** — justified by *measured* cost, and shared-immutable (OK to cache globally) vs per-user-dynamic (usually not)?
-10. **Delay diagnosis** — first-load (framework/WebView/assets) distinguished from per-click/update delays (your payload/render)?
-11. **Components** — the repo's primitives (`Button`/`Box`/`Section`/`Stack`/`Window`) over raw `div`/`button`/`h3`/`section`, with raw tags only as a deliberate exception?
-12. **SCSS size** — proportional to the problem, not re-implementing component layout? No absolute-pixel layout or bespoke scaling when a UI-scaling var exists?
-13. **Guide currency** — external guides treated as version-sensitive (Paradise's is for older TGUI)?
+4. **Interaction policy** — `ui_state()` matches the intended range, consciousness, access, inventory, and remote-use behavior?
+5. **Action security** — parent `ui_act` called first, rejected/handled actions stopped, and every client param validated before mutation?
+6. **Update routing** — `ui_act` return value + `SStgui.update_uis(src)` instead of manually grabbing a UI and `send_update()`? If static data changed, is `update_static_data()` called?
+7. **Autoupdate** — if off, is there a complete manual update path (`SStgui.update_uis(src)` at every external change site)?
+8. **Static vs dynamic** — heavy metadata in `ui_static_data`, volatile state in `ui_data`, split only where the payload justifies it?
+9. **JSON shape** — sequential DM lists typed as arrays, associative lists typed as objects, with matching `[]`/`{}` defaults?
+10. **Data, not presentation** — backend free of CSS classes / layout anchors / display labels that TS or CSS can derive?
+11. **Assets** — icons via the project's spritesheet/asset pipeline through `ui_assets`?
+12. **Caching** — justified by *measured* cost, and shared-immutable (OK to cache globally) vs per-user-dynamic (usually not)?
+13. **Delay diagnosis** — first-load (framework/WebView/assets) distinguished from per-click/update delays (your payload/render)?
+14. **State** — React state reserved for real interaction/asynchrony, with derived values computed directly from props/backend data?
+15. **Components** — the repo's primitives (`Button`/`Box`/`Section`/`Stack`/`Window`) over raw `div`/`button`/`h3`/`section`, with large interfaces split into focused components?
+16. **SCSS size** — proportional to the problem, not re-implementing component layout? No absolute-pixel layout or bespoke scaling when a UI-scaling var exists?
+17. **Guide currency** — external guides treated as version-sensitive (Paradise's is for older TGUI; old `/tg/` tgui-next and migration guides are historical)?
