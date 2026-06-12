@@ -1,6 +1,6 @@
 ---
 name: "ss13-tgui"
-description: "Version +1. Use when reviewing, implementing, simplifying, or debugging SS13 TGUI interfaces in BYOND/DM plus React (tgui-core or in-tree tgui) codebases (Vanderlin, /tg/, cmss13, BandaStation, Paradise, Goonstation and forks). Triggers on ui_interact/tgui_interact, ui_data/ui_static_data/ui_assets/ui_act/ui_state, SStgui.try_update_ui/update_uis, tgui components (Button, Box, Section, Stack, Window), React state, tgui SCSS/theming, TGUI performance or first-load delay, duplicate windows, and refactoring overcomplicated TGUI code. Reach for it whenever a task touches a tgui interface even if the user does not say the word TGUI."
+description: "Version +2. Use when reviewing, implementing, simplifying, or debugging SS13 TGUI interfaces in BYOND/DM plus React (tgui-core or in-tree tgui) codebases (Vanderlin, /tg/, cmss13, BandaStation, Paradise, Goonstation and forks). Triggers on ui_interact/tgui_interact, ui_data/ui_static_data/ui_assets/ui_act/ui_state, SStgui.try_update_ui/update_uis, tgui components (Button, Box, Section, Stack, Window), React state, tgui SCSS/theming, TGUI performance or first-load delay, duplicate windows, and refactoring overcomplicated TGUI code. Reach for it whenever a task touches a tgui interface even if the user does not say the word TGUI."
 ---
 
 # SS13 TGUI Interfaces
@@ -19,7 +19,7 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 2. **Read 2-3 neighboring interfaces** (`.dm` + `.tsx` + `.scss`). Match their `ui_interact` shape, component usage, and styling. Local convention beats any external guide.
 3. **Implement data-driven.** Backend sends *data*; frontend decides *presentation*. `ui_data()` for dynamic state; `ui_static_data()` for heavy, rarely-changing metadata (an optimization for big payloads — not mandatory for small UIs, and changing it requires an explicit `update_static_data()` push); `ui_assets()` for static assets.
 4. **Keep the update path standard.** `ui_act` returning truthy already fires `SStgui.update_uis(src)`. For state changed *outside* `ui_act`, call `SStgui.update_uis(src)` at the change site. Nothing else.
-5. **Style minimally.** Use the local component primitives over raw HTML; keep SCSS proportional to the problem.
+5. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
 6. **Measure before optimizing.** No caches or counters without a demonstrated cost.
 7. **Review against the checklist below.**
 
@@ -47,6 +47,19 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 
 Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such vars exist in /tg/ outside framework loops), scan/dedupe open windows with a custom helper, or grab one UI and `send_update()` manually when `SStgui.update_uis(src)` exists. `try_update_ui` already finds and refreshes the pooled UI for `(user, src)` — BYOND never truly closes windows, it minimises them. If duplicate windows can open, the standard open path is broken upstream; fix that, don't paper over it.
 
+## Choosing frontend elements (decision matrix)
+
+The same "don't hand-roll what the framework provides" rule applies to markup — and so does its inverse: don't strip contracts the platform provides. **Never mechanically find/replace HTML tags with `Box as="<tag>"`** — that loses native keyboard behavior, `type`/`aria-*`/`title` attributes, and SCSS element selectors while gaining nothing. Decide by what the element *is*:
+
+- a user action → `Button` (custom look = `className` + SCSS over its chrome, not a rebuilt pseudo-button);
+- a standard titled panel → `Section` with `title` / `buttons`;
+- a block-level layout/style wrapper → `Box` (it renders a `<div>`; it is a CSS-utility primitive, not a universal HTML replacement);
+- inline styled text with no specialized component → `Box as="span"` (the only `as` value common in /tg/ interfaces);
+- semantic prose, typed native attributes, or a wrapper's ref contract (e.g. `Tooltip` clones its child and injects a `ref` that must land on a DOM node) → raw HTML, with a comment when non-obvious;
+- unsure → read the component's implementation and 2-3 neighboring interfaces before choosing.
+
+Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it would break a bespoke panel's DOM/scroll/sticky structure, or you'd neutralize all of the component's chrome while using none of its behavior, keep the simpler construct. Details and the lost-contract checklist: `references/components-and-style.md`.
+
 ## Review checklist
 
 - Does `ui_interact`/`tgui_interact` follow the local `try_update_ui` pattern, with no extra refs or scanners?
@@ -59,7 +72,7 @@ Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such v
 - If autoupdate is off, does the update story collapse to `SStgui.update_uis(src)` at each change site?
 - Is any cache justified by *measured* cost? (Caching shared, immutable, same-for-everyone data globally is fine; caching per-user dynamic payloads keyed on a counter is not.)
 - Is a slow *first* open diagnosed as framework/WebView/asset transfer (slow on BYOND 516), not blamed on render or payload? Is per-click slowness diagnosed separately as update cost?
-- Does the React side use the repo's component primitives (`Button`/`Box`/`Section`/`Stack`/`Window`) instead of raw `div`/`button`/`h3`/`section`? (Raw tags are a rare, deliberate exception for free-form content, not the default.)
+- Is each frontend element chosen by semantics per the decision matrix — `Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text — rather than raw tags doing a component's job **or** `Box as="..."` impersonating native tags? Are remaining raw tags justified (semantics, native attributes, wrapper ref contracts) and commented where non-obvious?
 - Is SCSS proportional to the problem (not 1000+ lines re-implementing component layout), free of absolute-pixel layout, and reusing the shared theme base rather than a one-off palette or a bespoke scaling control?
 
 ## When repo patterns conflict
@@ -71,7 +84,7 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 - `references/source-corpus.md` — comparative map across tgstation, Vanderlin, cmss13, BandaStation: what was sampled, and which rules are universal vs fork-local. **Read first when unsure how far a rule generalizes.**
 - `references/tgui-workflow.md` — backend/frontend split, the data-vs-presentation contract, full review checklist with rationale.
 - `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
-- `references/components-and-style.md` — component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
+- `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
 - `references/case-study-overengineered-interface.md` — anonymized, reusable lessons from a reviewed TGUI redesign.
 - `references/refactor-timeline.md` — anonymized progression from bespoke machinery to framework-native patterns.
 

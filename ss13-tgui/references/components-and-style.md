@@ -4,7 +4,7 @@ Read this when writing or reviewing the React/SCSS side of an interface.
 
 ## Contents
 - Two component architectures (tgui-core vs in-tree)
-- Use components, raw HTML as a rare exception
+- Choosing an element: semantics first, then components
 - The typed data contract
 - useBackend / act
 - Component boundaries
@@ -23,21 +23,46 @@ The component *vocabulary* is the same everywhere, but it ships two ways:
 
 Older ports may still keep component styles in-tree while modern forks consume `tgui-core`. **Match the local convention** — grep a neighbor's import line before writing one. The rest of this file assumes you have done that and uses the shared component names.
 
-## Use components, raw HTML as a rare exception
+## Choosing an element: semantics first, then components
 
-Prefer the framework primitives over raw HTML tags:
+Start from what the element *is*, not from what tag it currently uses. Ask: is this a user action? a titled panel? a layout block? inline styled text? semantic prose? Then pick the construct whose **behavioral contract** matches:
 
-| Instead of | Use |
+| The element is... | Use |
 | --- | --- |
-| `<div>` / `<span>` | `Box` |
-| `<button>` | `Button` |
-| a titled block / `<h3>` + wrapper | `Section` |
-| manual flexbox via `<div>` | `Stack` (and `Stack.Item`) |
-| the window shell | `Window` (+ `Window.Content`) |
+| a user action (click does something) | `Button` (or `Button.Checkbox`, `Button.Confirm`, ...) |
+| a standard titled panel, possibly with header actions | `Section` with `title` / `buttons` |
+| a block-level layout/style wrapper | `Box` (renders a `<div>`) |
+| inline styled text with no specialized component | `Box as="span"` |
+| manual flexbox | `Stack` / `Stack.Item` |
+| semantic prose or a tag needing typed native attributes or a wrapper's ref contract | raw HTML (`<p>`, `<strong>`, `<h3>`, `<button>`, SVG) — with a comment when non-obvious |
+| unclear | read the component's implementation and 2-3 neighboring interfaces first |
 
-Why it matters beyond style: these components carry the framework's spacing, theming hooks, scaling behavior, and consistency. Hand-rolled `section`/`button`/`h3`/`div` opt out of all of that, so they drift from sibling interfaces and ignore the theme/scale system.
+**The anti-pattern this section exists to prevent: mechanical find/replace of HTML tags with `Box as="<tag>"`.** That swap satisfies the letter of "use components" while losing every contract that matters. In ~700 tgstation interfaces, `as="span"` appears dozens of times but `as="button"`, `as="header"`, `as="section"`, `as="strong"`, `as="h3"` appear **zero** times — the ecosystem treats `as` as an inline-text tool, not a tag-preserving wrapper.
 
-Raw tags are not *forbidden* — they are a **deliberate exception, not the default**. Only ~6% of tgstation interfaces use a raw `<div>`, and where they do it is for free-form content a component does not model well (e.g. rendering arbitrary text lines). If you reach for a raw tag, it should be because no component fits, not because raw HTML is more familiar. A review that finds raw tags doing what `Button`/`Box`/`Section`/`Stack` already do should flag them.
+### What each component actually is (verify in *your* fork's source)
+
+- **`Box`** is a CSS-utility primitive: it maps style props (`m`, `p`, `color`, `bold`, ...) onto one DOM element, a `<div>` by default. In tgui-core its public type accepts style props and event handlers — **not** `aria-*`, `title`, `type`, or `ref`. So `Box as="button"` produces an untyped pseudo-button: you can no longer (type-safely) restore `type="button"`, `aria-label`, or `title`, and you get none of `Button`'s behavior. Use `Box` when the element's only job is layout/decoration; use `as` only when the *tag itself* must differ for inline flow (`as="span"`) — not to mirror whatever tag the old markup used.
+- **`Button`** is behavior, not just chrome. In tgui-core it renders a focusable element with keyboard activation (Space/Enter), `disabled`/`selected` states, icon and ellipsis support, and a built-in `tooltip` prop. A bespoke-looking action should usually still be a `Button` with a `className` whose SCSS overrides the `.Button` chrome (interface styles load after component styles, so equal-specificity overrides win) — *not* a `Box as="button"` that silently re-implements half of this. Note the flip side: in tgui-core `Button` is a styled `div`, so a raw `<button type="button">` can be the *more* accessible choice when you need true native semantics under a fully bespoke skin.
+- **`Section`** generates a fixed DOM you must work with, not against: `.Section__title > .Section__titleText + .Section__buttons`, then `.Section__rest > .Section__content`. `title` and `buttons` accept ReactNode; `fill`/`scrollable` handle the common layouts. Use it for standard titled panels. For a heavily art-directed panel, adopting `Section` means restyling its generated wrappers in scoped SCSS (precedent: ListInput restyles `.Section__title` under its own class) — do that when the title/buttons machinery genuinely replaces markup you'd otherwise hand-roll. Do **not** force `Section` onto a design whose DOM, scroll structure, or sticky elements it would break; a `Box` is honest there.
+- **Wrappers like `Tooltip`** clone their child and inject a ref plus hover handlers; the child must land that ref on a real DOM node. Native tags always satisfy this. Components satisfy it only if they forward/pass through `ref` — check the implementation (and the wrapper's own docs example) instead of assuming. When a `Tooltip` child must stay a raw `<button>` for this reason, say so in a comment.
+
+### What a careless swap silently loses
+
+`type="button"`, `aria-label`/`aria-hidden`/`title`, native keyboard focus and activation, `:focus`/`:disabled` styling, SCSS element selectors (`.Foo strong { ... }` stops matching when `<strong>` becomes a `<div>`), and test/tutorial selectors. If a replacement drops any of these, it is a regression even when the pixels look identical.
+
+### Raw HTML is a deliberate exception — but a real one
+
+Prefer the framework primitives: they carry spacing, theming, scaling, and consistency with sibling interfaces. Reach for raw tags only with a concrete technical reason, and keep them rare:
+- semantic text where the tag *is* the point (`<p>`, `<strong>`, `<h3>` in prose-like content);
+- native attributes or behavior the local component types don't expose (`title`, `aria-*`, `type`, form semantics);
+- a wrapper's ref contract plus a bespoke skin that component chrome would fight;
+- content with no component model (inline SVG, sanitized free-form HTML).
+
+A review should flag raw tags doing what `Button`/`Section`/`Stack` already do — and equally flag `Box as="..."` doing what raw HTML or a specialized component does better.
+
+### Is the abstraction paying rent?
+
+A specialized component earns its place by *deleting* code: CSS you no longer write, keyboard/focus behavior you no longer re-implement, accessibility you get for free. If adopting a component means neutralizing most of its chrome **and** using none of its behavior, it isn't paying — keep the simpler construct. Conversely, if your `Box as="button"` needs onClick, hover styling, focus handling, and a tooltip, you are rebuilding `Button` by hand — switch to it.
 
 ## The typed data contract
 

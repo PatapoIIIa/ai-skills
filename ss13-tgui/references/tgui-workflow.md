@@ -136,6 +136,6 @@ Sending these from the backend made the DM aware of frontend layout and created 
 12. **Caching** — justified by *measured* cost, and shared-immutable (OK to cache globally) vs per-user-dynamic (usually not)?
 13. **Delay diagnosis** — first-load (framework/WebView/assets) distinguished from per-click/update delays (your payload/render)?
 14. **State** — React state reserved for real interaction/asynchrony, with derived values computed directly from props/backend data?
-15. **Components** — the repo's primitives (`Button`/`Box`/`Section`/`Stack`/`Window`) over raw `div`/`button`/`h3`/`section`, with large interfaces split into focused components?
+15. **Components** — each element chosen by semantics (`Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text; raw HTML only with a concrete technical reason — never a blanket `Box as="..."` tag swap; see `references/components-and-style.md`), with large interfaces split into focused components?
 16. **SCSS size** — proportional to the problem, not re-implementing component layout? No absolute-pixel layout or bespoke scaling when a UI-scaling var exists?
 17. **Guide currency** — external guides treated as version-sensitive (Paradise's is for older TGUI; old `/tg/` tgui-next and migration guides are historical)?
