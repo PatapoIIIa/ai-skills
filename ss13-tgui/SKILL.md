@@ -1,11 +1,15 @@
 ---
 name: "ss13-tgui"
-description: "Version +2. Use when reviewing, implementing, simplifying, or debugging SS13 TGUI interfaces in BYOND/DM plus React (tgui-core or in-tree tgui) codebases (Vanderlin, /tg/, cmss13, BandaStation, Paradise, Goonstation and forks). Triggers on ui_interact/tgui_interact, ui_data/ui_static_data/ui_assets/ui_act/ui_state, SStgui.try_update_ui/update_uis, tgui components (Button, Box, Section, Stack, Window), React state, tgui SCSS/theming, TGUI performance or first-load delay, duplicate windows, and refactoring overcomplicated TGUI code. Reach for it whenever a task touches a tgui interface even if the user does not say the word TGUI."
+description: "Use only for SS13 TGUI/web UI work: implementing, reviewing, simplifying, or debugging a tgui interface; DM procs ui_interact/tgui_interact/ui_data/ui_static_data/ui_assets/ui_act/ui_state; SStgui lifecycle; files under tgui interfaces/routes/layouts/components/SCSS; tgui-core or in-tree tgui components; BYOND browser bridge work involving ByondUi, winset/winget/callByond, config.window/config.ref, embedded maps/camera controls; tgui dev-server/HMR; duplicate tgui windows; first-load/per-update tgui performance; or overengineered tgui refactors. Do not use for ordinary SS13 DM gameplay/content/systems work, mobs/items/icons/balance/admin verbs/database/mapping, or generic BYOND code unless the request or changed files also touch TGUI or BYOND browser UI integration."
 ---
 
 # SS13 TGUI Interfaces
 
 Review, implement, simplify, and debug TGUI interfaces in BYOND/DM + React codebases. The goal is correct, idiomatic, **codebase-native** TGUI — not bespoke machinery that reimplements what the framework already does.
+
+## Activation guard
+
+Use this skill only when the request or changed files include a TGUI-specific signal: `tgui/` frontend files, `ui_interact`/`tgui_interact`, `ui_data`, `ui_act`, `SStgui`, tgui components, TGUI SCSS, `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, or tgui dev-server/routing work. If the task is normal SS13 DM content or systems work with no UI/webview bridge, do not apply this skill. If the task is ambiguous, inspect the changed paths and nearest procs before leaning on these rules.
 
 ## The one root cause
 
@@ -15,13 +19,15 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 
 ## Approach (do these in order)
 
-1. **Learn the local names before writing a line.** TGUI's *concepts* are stable across forks; its *names and import paths are not.* The backend entry proc is `ui_interact` in /tg/, Vanderlin, and BandaStation but `tgui_interact` in cmss13. Components come from `tgui-core/components` in tgui-core forks but from in-tree `tgui/components` in older ports (cmss13, older Azure-derived code). Grep one neighboring interface in *this* repo and copy its proc name, its component import path, and its `useBackend`/`Window` imports. Memory from another fork will not compile here.
+1. **Learn the local names before writing a line.** TGUI's *concepts* are stable across forks; its *names and import paths are not.* The backend entry proc is `ui_interact` in /tg/, Vanderlin, and BandaStation but `tgui_interact` in cmss13. Components come from `tgui-core/components` in tgui-core forks but from in-tree `tgui/components` in older ports (cmss13, older Azure-derived code, old tgstation tgui). Grep one neighboring interface in *this* repo and copy its proc name, route registration pattern, component import path, and its `useBackend`/`Window` imports. Memory from another fork will not compile here.
 2. **Read 2-3 neighboring interfaces** (`.dm` + `.tsx` + `.scss`). Match their `ui_interact` shape, component usage, and styling. Local convention beats any external guide.
-3. **Implement data-driven.** Backend sends *data*; frontend decides *presentation*. `ui_data()` for dynamic state; `ui_static_data()` for heavy, rarely-changing metadata (an optimization for big payloads — not mandatory for small UIs, and changing it requires an explicit `update_static_data()` push); `ui_assets()` for static assets.
-4. **Keep the update path standard.** `ui_act` returning truthy already fires `SStgui.update_uis(src)`. For state changed *outside* `ui_act`, call `SStgui.update_uis(src)` at the change site. Nothing else.
-5. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
-6. **Measure before optimizing.** No caches or counters without a demonstrated cost.
-7. **Review against the checklist below.**
+3. **Register the frontend where this generation requires it.** Older in-tree tgui uses a central `routes.js` table keyed by the DM interface name; missing route entries render a "Route entry missing" fallback. Modern forks may auto-discover or use a different routing table. Copy the local route/import/wrapper/theme pattern.
+4. **Implement data-driven.** Backend sends *data*; frontend decides *presentation*. `ui_data()` for dynamic state; `ui_static_data()` for heavy, rarely-changing metadata (an optimization for big payloads — not mandatory for small UIs, and changing it requires an explicit `update_static_data()` push); `ui_assets()` for static assets.
+5. **Keep the update path standard.** `ui_act` returning truthy already fires `SStgui.update_uis(src)`. For state changed *outside* `ui_act`, call `SStgui.update_uis(src)` at the change site. Nothing else.
+6. **Treat BYOND controls as a bridge, not React.** If the interface embeds a map/camera/control with `ByondUi`, inspect the local `ByondUi` and BYOND bridge source before changing it. Read `references/byond-ui-and-devserver.md`.
+7. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
+8. **Measure before optimizing.** No caches or counters without a demonstrated cost.
+9. **Review against the checklist below.**
 
 ## Standard backend pattern
 
@@ -47,6 +53,18 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 
 Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such vars exist in /tg/ outside framework loops), scan/dedupe open windows with a custom helper, or grab one UI and `send_update()` manually when `SStgui.update_uis(src)` exists. `try_update_ui` already finds and refreshes the pooled UI for `(user, src)` — BYOND never truly closes windows, it minimises them. If duplicate windows can open, the standard open path is broken upstream; fix that, don't paper over it.
 
+## ByondUi / BYOND controls
+
+Use `ByondUi` only for actual BYOND skin controls that must be layered over the browser, most commonly embedded maps/camera views. It is not a replacement for normal tgui `Button`, `Input`, `Section`, or HTML layout. In old in-tree tgui, `ByondUi` computes its DOM bounding box and calls BYOND `winset` with `id`, `parent`, `type`, `pos`, and `size`; on unmount/beforeunload it clears the control's `parent`. That means the React element is a positioning anchor, while the visible control is still BYOND-owned.
+
+When using or reviewing it:
+
+- Verify the repo actually has `ByondUi` or an equivalent component; modern/forked tgui may differ.
+- Pass `parent: config.window` and the BYOND control `type` required by the skin params. Use a stable `id` from backend data when DM or another control must address the same control, as camera consoles do with a map ref.
+- Keep it in a stable, nonzero-sized container; old implementations update position on render and debounced window resize, not every scroll event.
+- Use `act()`/`ui_act` for gameplay mutations. Use raw `winset`/`winget`/`callByond` only for BYOND window/control properties or framework bridge code.
+- Debug blank controls by checking route registration, `config.window`, id uniqueness, CSS/container size, clipping/scrolling, backing DM map/control setup, and local browser support before rewriting the interface.
+
 ## Choosing frontend elements (decision matrix)
 
 The same "don't hand-roll what the framework provides" rule applies to markup — and so does its inverse: don't strip contracts the platform provides. **Never mechanically find/replace HTML tags with `Box as="<tag>"`** — that loses native keyboard behavior, `type`/`aria-*`/`title` attributes, and SCSS element selectors while gaining nothing. Decide by what the element *is*:
@@ -63,6 +81,7 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 ## Review checklist
 
 - Does `ui_interact`/`tgui_interact` follow the local `try_update_ui` pattern, with no extra refs or scanners?
+- Is the interface registered in the local routing mechanism (`routes.js` or equivalent) with the DM interface key, wrapper, theme, and scrollability matching neighboring interfaces?
 - Is duplicate-window prevention left to TGUI rather than custom code?
 - Does `ui_state()` use the local state policy for range, consciousness, access, and remote interaction rather than duplicating those checks in the frontend?
 - Does every `ui_act` call its parent first, stop when the parent handled/rejected the action, and validate every client-supplied `params` value before mutation?
@@ -73,6 +92,7 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - Is any cache justified by *measured* cost? (Caching shared, immutable, same-for-everyone data globally is fine; caching per-user dynamic payloads keyed on a counter is not.)
 - Is a slow *first* open diagnosed as framework/WebView/asset transfer (slow on BYOND 516), not blamed on render or payload? Is per-click slowness diagnosed separately as update cost?
 - Is each frontend element chosen by semantics per the decision matrix — `Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text — rather than raw tags doing a component's job **or** `Box as="..."` impersonating native tags? Are remaining raw tags justified (semantics, native attributes, wrapper ref contracts) and commented where non-obvious?
+- If `ByondUi` is present, is it reserved for real BYOND controls, anchored to `config.window`, given a stable id when needed, and kept out of scrolling/zero-size layout traps?
 - Is SCSS proportional to the problem (not 1000+ lines re-implementing component layout), free of absolute-pixel layout, and reusing the shared theme base rather than a one-off palette or a bespoke scaling control?
 
 ## When repo patterns conflict
@@ -85,12 +105,14 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 - `references/tgui-workflow.md` — backend/frontend split, the data-vs-presentation contract, full review checklist with rationale.
 - `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
 - `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
+- `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
 - `references/case-study-overengineered-interface.md` — anonymized, reusable lessons from a reviewed TGUI redesign.
 - `references/refactor-timeline.md` — anonymized progression from bespoke machinery to framework-native patterns.
 
 ## External references (summarize and link, don't copy; all version-sensitive)
 
 - Current `/tg/` TGUI documentation — canonical modern fallback after local code/docs: https://github.com/tgstation/tgstation/tree/master/tgui/docs
+- Old in-tree `/tg/` tgui README and source — useful for legacy Inferno/routes/`ByondUi` details, not authority over modern forks: https://github.com/Giacom/-tg-station/blob/master/tgui/README.md
 - Paradise TGUI guide — introductory background only; the page warns it predates current TGUI: https://paradisestation.org/wiki/index.php/Guide_to_TGUI
 - Goonstation TGUI guide (mostly points at the README): https://hackmd.io/@goonstation/tgui
 - Goonstation `/tgui` README: https://github.com/goonstation/goonstation/blob/master/tgui/README.md
