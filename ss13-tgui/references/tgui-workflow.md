@@ -48,6 +48,9 @@ Splitting `ui_static_data` from `ui_data` keeps each dynamic update small and av
 
 - Static data is sent on open and cached frontend-side; it is **not** re-sent by autoupdate. If it changes, call `update_static_data(user)` (or `update_static_data_for_all_viewers()`). See `references/performance-and-lifecycle.md`.
 - Only put genuinely stable data in `ui_static_data`. If a field changes during normal play, it belongs in `ui_data`.
+- If **all** of a UI's data does not need live updates, disabling autoupdate can be simpler than inventing a static-data split. Then every external mutation must push `SStgui.update_uis(src)`.
+- If static data changes can arrive in bursts, batch `update_static_data_for_all_viewers()` with the repo's unique timer/addtimer pattern.
+- If a static payload is techweb-scale and repeats many long ids, consider payload deduplication/compressed ids. Do not add this to small option lists.
 
 ## UI state and action security
 
@@ -73,6 +76,7 @@ Treat every `action` and `params` value as client-controlled input:
 
 - Always follow the local parent-call pattern. In modern `/tg/`, the parent rejects actions when the UI is not interactive or the caller is not the UI user.
 - Validate types, ranges, membership, permissions, and referenced objects on the backend. A disabled or hidden button is not an authorization check.
+- Prefer `ui.user` over implicit `usr` when the local `ui_act` signature provides it; it makes the actor explicit and avoids hidden caller coupling.
 - Return truthy only for an action that was handled. That return is also the normal signal for TGUI to update the open viewers.
 - Copy the local conversion idiom (`text2num`, `text2path`, `locate`, helpers, or native typed params) because payload types differ between TGUI generations. Never assume every param is a string.
 
@@ -91,6 +95,7 @@ Why this is the whole pattern, and why custom machinery around it is a mistake:
 - **TGUI pools windows.** `try_update_ui` finds the existing pooled UI for `(user, src)` and refreshes it instead of creating a duplicate. BYOND minimises browser windows rather than closing them.
 - **You do not need to track the UI yourself.** Open UIs live in `src.open_uis`. Storing a long-lived `datum/tgui` reference on a domain datum couples gameplay state to UI lifecycle and goes stale — /tg/ never does it.
 - **You do not need to dedupe windows.** If a user can open two of the same menu, something upstream of `try_update_ui` is broken. Fix the root cause; do not add a scanner.
+- **Do not use `try_update_ui` as a lookup predicate.** A pattern like `if(SStgui.try_update_ui(...))` followed by another `try_update_ui()` call refreshes twice and treats the open path as control flow. Assign once inside the entry proc; for unusual close/control behavior, use the framework's explicit open-UI helpers and document why.
 
 ## DM list shapes after JSON
 
@@ -121,6 +126,12 @@ If a value can be computed from data already present, compute it in TS — don't
 Sending these from the backend made the DM aware of frontend layout and created a hardcoded mapping that drifted from the real definitions. The rule: **presentation classes and display labels live in the frontend.**
 
 ## Full review checklist (with rationale)
+
+Add these performance-specific checks to the list below when relevant:
+
+- Repeated static changes are batched instead of firing full static refreshes per signal.
+- Repeated icon catalogs use `ui_assets()`/spritesheets; base64 is reserved for deliberate one-off or dynamic cases.
+- Huge static graphs may dedupe repeated ids; small option lists should not grow compression machinery.
 
 1. **Local names** — entry proc (`ui_interact`/`tgui_interact`) and component imports match the repo's neighbors?
 2. **Entry-proc shape** — matches the local `try_update_ui` pattern? Anything extra (refs, scanners) is suspect.

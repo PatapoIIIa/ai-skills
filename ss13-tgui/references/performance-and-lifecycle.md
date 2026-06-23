@@ -11,6 +11,8 @@ Read this when diagnosing TGUI slowness, deciding whether to disable autoupdate,
 - Asset caching (webview already does it)
 - When custom caching is and isn't warranted (shared vs per-user)
 - Generation counters / dirty flags
+- /tg/ and Bubberstation patterns worth copying
+- Review patterns: bad practices vs good replacements
 
 ## How the lifecycle actually works (from source)
 
@@ -39,6 +41,8 @@ If you disabled autoupdate, the whole update story should collapse to: "on chang
 
 `ui_static_data` is sent on open and then cached frontend-side; it is **not** re-sent by the autoupdate loop. The framework docstring is explicit: static data is "large data that should be sent infrequently... for heavy uis." If something the static payload depends on changes, call `update_static_data(user)` (or `update_static_data_for_all_viewers()`), which sends a full update. Forgetting this is the classic "I split it into static data and now my metadata never refreshes" bug. Corollary: only put genuinely stable data in `ui_static_data` — if it changes often, it belongs in `ui_data`.
 
+When static dependencies can change in bursts (research unlocks, surgery techweb updates, loaded protocols), copy /tg/'s batched pattern: schedule `update_static_data_for_all_viewers()` behind the local unique timer/addtimer mechanism instead of sending a full static refresh for every signal.
+
 ## First-load delay vs per-update delay (diagnose before optimizing)
 
 These are different problems with different fixes. Misdiagnosing wastes effort on the wrong layer.
@@ -54,6 +58,8 @@ Assets sent once are cached by the webview for the session. Do not fight this wi
 
 - Spritesheets for many small icons (one CSS + sheet vs. many files); return them from `ui_assets()`. (See /tg/ `rdconsole.dm` / `_production.dm` returning `spritesheet_batched` datums.)
 - `ui_assets()` / a simple asset datum / the asset cache for static images.
+
+Base64 is a warning sign, not an automatic bug. It is still reasonable for rare dynamic photos, one-off generated previews, or grayscale/color cases that the normal icon reference cannot express. It becomes a performance smell when the UI sends many stable option images as base64 strings, regenerates them on interaction, or keeps a parallel thumbnail cache after spritesheets exist.
 
 ## When custom caching is (and isn't) warranted
 
@@ -73,3 +79,60 @@ A "generation counter + per-user last-sent generation" scheme is tempting for di
 - In a reviewed redesign this exact mechanism was added, then deleted — updates were already on-demand, so the cache did not earn its complexity, and a counter was not a sound cache key because it did not describe whether the content changed.
 
 If you believe you need it, prove the cost first, then key the cache on serialized content, not a counter.
+
+## /tg/ and Bubberstation patterns worth copying
+
+- **Static/dynamic split only when payload size earns it.** /tg/'s conversion docs call `ui_static_data()` a heavy-UI optimization, and explicitly note that a UI whose data does not need live updates can disable autoupdate instead of forcing a static-data split.
+- **Spritesheets plus ids/classes for repeated icon catalogs.** /tg/ fabrication, techweb, crafting, and Bubberstation preferences middleware send asset ids or sanitized spritesheet class names, not per-option base64 thumbnails.
+- **Deduplicate huge static graphs.** /tg/ research consoles compress repeated ids before sending static techweb/design graphs. This is a targeted payload optimization, not a reason to add caches to small UIs.
+- **Batch static refreshes.** /tg/ operating computer batches repeated static changes with a unique timer before calling `update_static_data_for_all_viewers()`.
+- **Preferences middleware keeps preview updates local.** Bubberstation middleware delegates actions, updates preference data, calls `character_preview_view.update_body()` for visual-only body changes, and calls `preferences.update_static_data(user)` only when static dependencies such as quirks/options actually change.
+
+## Review patterns: bad practices vs good replacements
+
+Use this section when reviewing a TGUI change for "bad practices" and "good patterns." Treat it as a search checklist, not as a rule to reject all heavy UI work. Heavy work is acceptable when it is deliberate, measured, and kept off the hot path.
+
+### Bad patterns to flag
+
+- **Base64 option catalogs in `ui_static_data()`.** Many small `icon2base64()` strings in static data bloat the initial payload and make every `update_static_data()` expensive. Search for `icon2base64`, `thumbnail`, `thumb_cache`, and `ui_static_data` together.
+- **Custom thumbnail caches after a spritesheet exists.** Once a picker uses `ui_assets()` and a spritesheet, old `*_thumbnail()` procs and global `*_thumb_cache` lists are dead complexity.
+- **Image generation for simple enum state.** If a picker has become values like `None`, `White`, `Dark`, or simple modes, remove tile/icon renderers and option caches.
+- **Full preview render in the click/hover hot path.** Dummy generation, `apply_prefs_to`, outfit equip, flattening, and `icon2base64` are BYOND-side heavy operations. Do not run them synchronously on every hover/click without a cache key and async path.
+- **Replacement previews that stack over the current item.** For hair/accessory/body replacement, showing the candidate on top of the already-equipped current sprite gives plausible but wrong screenshots and often leads to extra rendering work.
+- **Static data that depends on frequent state.** `ui_static_data()` is cached frontend-side. If a payload changes often, putting it there forces full static refreshes or stale UI.
+- **Temporary instrumentation left in production code.** Disk loggers, timing locals using `world.timeofday`, render counters, and per-action traces are useful only while measuring. Remove them after they answer the question.
+- **Vague generation counters as cache keys.** A counter says "something happened," not whether this payload changed. It is easy to desync and hard to review.
+- **`try_update_ui` as control-flow lookup.** Code like `if(SStgui.try_update_ui(...))` followed by a second `try_update_ui()` call uses the open path as a UI finder and duplicates work. In normal code, assign once inside `ui_interact`; for exceptional close/control cases, inspect the local framework API instead of probing by refresh.
+
+### Good replacements
+
+- **Spritesheet plus stable ids/classes for large pickers.** Send sprites through `ui_assets()` and send only small ids/CSS classes in static data.
+- **Simple enum values for simple modes.** Backgrounds, filters, and toggles should usually be values, not generated images.
+- **Cache expensive preview output by meaningful serialized state.** Use a signature that includes the state that changes the rendered result: species, gender, clothing flags, direction, relevant feature data, colors, etc.
+- **Render heavy previews asynchronously.** Let the UI update immediately with existing/placeholder state, build the expensive image in a `waitfor = FALSE` proc, then call `SStgui.update_uis(src)` if the signature still matches.
+- **For replacement hover previews, render a base without the current customizer.** Temporarily disable the current entry, render/cache that base by `(customizer, preview signature)`, then overlay the candidate on the base.
+- **Keep `ui_static_data()` genuinely static.** Put catalogs and immutable metadata there; put selected values, preview images, hover state, and anything frequently changing in `ui_data()`.
+- **Batch repeated static refreshes.** If many signals mutate static metadata in one burst, use the local `addtimer(..., TIMER_UNIQUE)` or equivalent to coalesce `update_static_data_for_all_viewers()`.
+- **Compress only truly huge repeated payloads.** ID compression is appropriate for techweb-scale static graphs; it is overengineering for small option lists.
+- **Delete obsolete paths in the same iteration.** When a new path supersedes old code, remove the old proc, global cache, counters, and call sites before considering the feature done.
+
+### Fast grep pass
+
+Useful suspicious terms:
+
+```text
+icon2base64
+ui_static_data
+update_static_data
+thumbnail
+thumb_cache
+GLOBAL_LIST_EMPTY.*cache
+world.timeofday
+WRITE_LOG
+pref_log
+set_autoupdate(FALSE)
+if(SStgui.try_update_ui
+getFlatIcon
+render_preview
+useLocalState
+```

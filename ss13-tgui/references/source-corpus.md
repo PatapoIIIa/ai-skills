@@ -1,4 +1,4 @@
-# Source Corpus: comparative map across four SS13 forks
+# Source Corpus: comparative map across five SS13 forks
 
 Read this to calibrate "is this rule universal or fork-local?" before applying any other reference. It records what was actually sampled, classifies findings by how far they generalize, and is the evidence base for the rules in `SKILL.md` and the other references. Paths are read-only references — do not edit application repos.
 
@@ -8,6 +8,7 @@ Read this to calibrate "is this rule universal or fork-local?" before applying a
 | --- | --- | --- | --- | --- | --- |
 | tgstation | Canonical modern /tg/ baseline | June 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
 | Vanderlin | tgui-core fork and reviewed redesign sample | June 2026 | yes (^5.6) | `ui_interact` | `tgui-core/components` |
+| Bubberstation | /tg/-derived tgui-core fork with modular preferences examples | June 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
 | cmss13-MARINES | Independent codebase, older port | April 2026 | **no** | **`tgui_interact`** | **`tgui/components`** (local) |
 | BandaStation-Kagelite_DEV | /tg/-derived fork-of-fork | May 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
 
@@ -25,7 +26,8 @@ These files exist with the same shape in Vanderlin and BandaStation. cmss13's eq
 
 ## Backend examples sampled
 
-- tgstation: `code/game/machinery/announcement_system.dm` (clean `ui_interact` + split static/dynamic + `ui_act`), `code/game/machinery/autolathe.dm`, `code/modules/research/machinery/_production.dm` and `code/modules/research/rdconsole.dm` (real `ui_assets` returning spritesheets; rdconsole carries the comment *"heavy data from this proc should be moved to static data when possible"*), `code/modules/power/apc/apc_main.dm` (`SStgui.update_uis(src)` on external state change).
+- tgstation: `code/game/machinery/announcement_system.dm` (clean `ui_interact` + split static/dynamic + `ui_act`), `code/game/machinery/autolathe.dm`, `code/modules/research/machinery/_production.dm` and `code/modules/research/rdconsole.dm` (real `ui_assets` returning spritesheets; rdconsole carries the comment *"heavy data from this proc should be moved to static data when possible"*), `code/game/machinery/computer/operating_computer.dm` (batched `update_static_data_for_all_viewers()`), `code/modules/power/apc/apc_main.dm` (`SStgui.update_uis(src)` on external state change).
+- Bubberstation: `modular_skyrat/master_files/code/modules/client/preferences/middleware/languages.dm` (preferences middleware returning a spritesheet from `get_ui_assets()` and sanitized sprite keys in data), `limbs_and_markings.dm` (action delegations, preview body updates, static refresh only when option dependencies change), and one bad-pattern sample where `try_update_ui` was used as a control-flow lookup and called twice.
 - Vanderlin: a corrected datum-backed interface using the standard open path, split static/dynamic data, and `SStgui.update_uis(src)` at the external mutation site (see the anonymized case study).
 - cmss13: `code/game/machinery/computer/camera_console.dm`, `demo_sim.dm`, `dropship_weapons.dm` (all `tgui_interact`).
 - BandaStation: same `ui_interact` shape as /tg/ (430 files); spot-checked against /tg/ equivalents.
@@ -38,12 +40,13 @@ Counts (proc definitions found): `try_update_ui` present in essentially every in
 - Vanderlin: a large custom skills interface (imports from `tgui-core/components`; the sampled version still had extensive raw HTML and a thousand-plus-line SCSS file, making frontend cleanup the remaining work).
 - cmss13: `interfaces/Vending.tsx`, `interfaces/PowerMonitor.tsx` (import `Box/Button/Section/Stack/Table` from local `tgui/components`, `useBackend` from `tgui/backend`, `Window` from `tgui/layouts` — same vocabulary, local source).
 - BandaStation: `interfaces/Vending.tsx`, `interfaces/AirAlarm.tsx` (`tgui-core/components`, /tg/-identical idiom).
+- Bubberstation: `tgui/packages/tgui/interfaces/PreferencesMenu/**` and neighboring core interfaces (`tgui-core/components`, `useBackend` from local `tgui/backend`, same modern route/component vocabulary as /tg/).
 
 Observed everywhere: components from a single import (`Box`, `Button`, `Section`, `Stack`, plus `Window` layout), `const { act, data } = useBackend<Data>()`, a TypeScript `type Data = {...}` contract using `BooleanLike` for DM booleans. Raw `<div>/<span>/<button>` is the rare exception (~6% of /tg/ interfaces), reserved for free-form content no component models well.
 
 ## Classification of findings
 
-### Stable cross-repo principles (true in all four; safest defaults)
+### Stable cross-repo principles (true in all sampled forks; safest defaults)
 - Open with `ui = SStgui.try_update_ui(user, src, ui)` then `if(!ui)` create+`open()`. (Entry proc is `ui_interact` everywhere except cmss13's `tgui_interact`.)
 - One UI per `(user, src_object)`; the framework pools/dedupes via `src_object.open_uis`. No custom dedup, no stored UI ref on the datum.
 - `ui_act` returning truthy triggers `SStgui.update_uis(src_object)` — independent of autoupdate.
@@ -58,6 +61,12 @@ Observed everywhere: components from a single import (`Box`, `Button`, `Section`
 - `ui_static_data` for heavy/rarely-changing payloads (and call `update_static_data()` to push changes); `ui_data` for dynamic state. Used widely but selectively — heavy UIs, not every UI.
 - `Window` + `Window.Content` layout wrapper.
 - Light theming is a global override of the base tgui-core theme and "just works" when interfaces use tgui-core correctly.
+
+### Bubberstation-local conventions
+- tgui-core fork (^5.10), `ui_interact`, `tgui-core/components`; most /tg/ lifecycle and component rules transfer directly.
+- Modular preferences work often routes through `datum/preference_middleware` with `action_delegations`, `get_ui_data()`, `get_ui_assets()`, and targeted `character_preview_view.update_body()` calls.
+- Spritesheet asset keys are often sanitized CSS class names from backend data. Treat these as asset handles, not arbitrary presentation classes.
+- Do not copy examples blindly: fork-local modules can contain local bugs or one-off patterns. Use them to learn conventions, then verify against framework docs/source.
 
 ### Vanderlin-local conventions
 - tgui-core fork (^5.6), `ui_interact`, `tgui-core/components` — tracks /tg/.
@@ -74,6 +83,7 @@ Observed everywhere: components from a single import (`Box`, `Button`, `Section`
 
 ### Anti-patterns (seen or warned against; all have a one-line framework-native fix)
 - Custom open-UI scanner / duplicate-window guard (framework dedupes via `try_update_ui`).
+- Calling `SStgui.try_update_ui()` in an `if` guard and then calling it again to get a UI; assign once in the entry proc or use an explicit framework helper for exceptional control flow.
 - Long-lived `datum/tgui` ref stored on a gameplay datum (zero such vars in /tg/ outside framework loop iterators; updates go through `update_uis`).
 - Autoupdate off **without** a clean update path; custom update wrapper proc instead of `SStgui.update_uis(src)`.
 - Generation counter / per-user "dirty" cache keyed on an update count (bad cache key; on-demand updates rarely need it).

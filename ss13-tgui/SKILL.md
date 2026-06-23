@@ -27,7 +27,9 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 6. **Treat BYOND controls as a bridge, not React.** If the interface embeds a map/camera/control with `ByondUi`, inspect the local `ByondUi` and BYOND bridge source before changing it. Read `references/byond-ui-and-devserver.md`.
 7. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
 8. **Measure before optimizing.** No caches or counters without a demonstrated cost.
-9. **Review against the checklist below.**
+9. **Delete measurement scaffolding after it answers the question.** Temporary disk loggers, render counters, timing vars, and per-action traces are useful while diagnosing TGUI latency, but they are not part of the feature. Once performance is confirmed, remove the proc definitions, globals, call sites, and dead cache plumbing in the same cleanup pass.
+10. **For broad reviews, run the read-only smell scan when it will save time.** `scripts/tgui_smell_scan.py` flags likely hotspots (`icon2base64`, manual UI refs, autoupdate off, temporary loggers, `useLocalState`, suspicious `Box as`, etc.). Treat hits as leads for inspection, not as linter failures.
+11. **Review against the checklist below.**
 
 ## Standard backend pattern
 
@@ -52,6 +54,16 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 ```
 
 Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such vars exist in /tg/ outside framework loops), scan/dedupe open windows with a custom helper, or grab one UI and `send_update()` manually when `SStgui.update_uis(src)` exists. `try_update_ui` already finds and refreshes the pooled UI for `(user, src)` — BYOND never truly closes windows, it minimises them. If duplicate windows can open, the standard open path is broken upstream; fix that, don't paper over it.
+
+## Appearance preview pickers
+
+For high-cardinality appearance pickers, prefer `ui_assets()` plus a spritesheet and a small static catalog of stable CSS class names. Do not send one base64 thumbnail per option through `ui_static_data()` once the spritesheet is authoritative; delete the old thumbnail proc and global cache instead of leaving a parallel path.
+
+Base64 is not banned. `/tg/` still uses it for rare dynamic photos, one-off previews, or cases where a sprite cannot be represented by the normal icon reference. The performance smell is **repeated base64 option catalogs** and synchronous thumbnail generation in hot paths; for many stable options, use assets/spritesheets plus ids.
+
+Keep picker state simple. If a background picker has become `None` / `White` / `Dark`, send those values directly and remove turf thumbnail renderers and option caches. If a helper now returns an `icon` directly, remove any stale cache that used to wrap that helper.
+
+For hover previews that replace an existing sprite accessory, render the base doll with the current customizer temporarily disabled, cache it by `(customizer, current preview signature)`, and overlay the candidate on that base. Do not stack the candidate over the already-equipped current accessory; it gives plausible screenshots while hiding the actual replacement bug.
 
 ## ByondUi / BYOND controls
 
@@ -86,10 +98,13 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - Does `ui_state()` use the local state policy for range, consciousness, access, and remote interaction rather than duplicating those checks in the frontend?
 - Does every `ui_act` call its parent first, stop when the parent handled/rejected the action, and validate every client-supplied `params` value before mutation?
 - Are updates routed through `ui_act` return + `SStgui.update_uis(src)` (and `update_static_data()` if static data changed) rather than a custom wrapper or stored UI?
+- If several static dependencies can change in a burst, is `update_static_data_for_all_viewers()` batched with the local timer/unique pattern instead of spammed per signal?
 - Is the backend sending only data — no CSS classes, layout anchors, or display labels the frontend could derive?
 - Does the frontend type the actual JSON shape (DM associative lists become objects; sequential lists become arrays) and avoid storing values in React state when they can be derived directly?
 - If autoupdate is off, does the update story collapse to `SStgui.update_uis(src)` at each change site?
 - Is any cache justified by *measured* cost? (Caching shared, immutable, same-for-everyone data globally is fine; caching per-user dynamic payloads keyed on a counter is not.)
+- Were temporary performance loggers, timing locals, render counters, and obsolete thumbnail/base64 caches removed after the final approach was chosen?
+- For appearance pickers, are large option catalogs delivered as assets/spritesheets plus ids instead of repeated base64 strings in static data?
 - Is a slow *first* open diagnosed as framework/WebView/asset transfer (slow on BYOND 516), not blamed on render or payload? Is per-click slowness diagnosed separately as update cost?
 - Is each frontend element chosen by semantics per the decision matrix — `Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text — rather than raw tags doing a component's job **or** `Box as="..."` impersonating native tags? Are remaining raw tags justified (semantics, native attributes, wrapper ref contracts) and commented where non-obvious?
 - If `ByondUi` is present, is it reserved for real BYOND controls, anchored to `config.window`, given a stable id when needed, and kept out of scrolling/zero-size layout traps?
@@ -106,8 +121,13 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 - `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
 - `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
 - `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
+- `references/review-playbooks.md` — task-specific review order for performance, lifecycle/backend, frontend/components, appearance pickers, BYOND controls, and refactors. **Read for broad review requests or when asked to find bad practices.**
 - `references/case-study-overengineered-interface.md` — anonymized, reusable lessons from a reviewed TGUI redesign.
 - `references/refactor-timeline.md` — anonymized progression from bespoke machinery to framework-native patterns.
+
+Bundled script: `scripts/tgui_smell_scan.py` is a read-only first-pass scanner for broad reviews. Run it on changed TGUI files or a narrow directory, then inspect each hit against the references above.
+
+For performance reviews, read `references/performance-and-lifecycle.md`; it includes the lifecycle rules plus concrete bad/good patterns from appearance preview and picker work.
 
 ## External references (summarize and link, don't copy; all version-sensitive)
 

@@ -50,6 +50,10 @@ The *concepts* below are stable across /tg/ forks; the *folder names, include me
 
 Re-opening a proc is for *wrapping* — tack logic on after `..()`, or weave a `..()` call into a small new override. **Never copy a whole upstream proc into a modular file to change one line:** it silently shadows upstream, so future upstream improvements to that proc vanish here and no one notices until something breaks. If you cannot achieve the effect by wrapping, that is a signal to stop, not to copy-paste.
 
+If a core helper has a real generic bug but the downstream project is operating under a modular-only rule, stop and ask before touching `code/`. A modular prefixed copy can be acceptable only after the human chooses that tradeoff; keep it narrowly scoped, name it with the module prefix, comment the upstream source and exact reason, and state when it should be deleted after the upstream helper is fixed.
+
+When an iteration replaces an earlier modular path, delete the old path in the same pass. Examples: a spritesheet makes per-accessory base64 thumbnail procs and caches dead; a `None` / `White` / `Dark` background picker makes turf-thumbnail renderers and option caches dead; a helper that now returns an `icon` directly makes a separate direction-sprite cache dead.
+
 ## Per-domain rules
 
 - **DM code** — Content goes in the modular root. Mirror the upstream path under the override folder for type extensions; use `modules/<feature>/code/` for new content. Add new vars/subtypes/procs by re-opening types. Register your `.dm` in the include list or aggregator.
@@ -69,6 +73,7 @@ Re-opening a proc is for *wrapping* — tack logic on after `..()`, or weave a `
 - Cross-module dependencies (module A silently needs module B's defines/files) without declaring them in the module readme — breaks when one is removed.
 - Untagged upstream edits — invisible at the next merge, the exact thing the whole system prevents.
 - Forcing one fork's machinery (Vanderlin's temp-DME build pipeline, cmss13's heavy-fork layout) onto a different fork. Match the local convention; see `references/fork-comparison.md`.
+- Leaving iteration scaffolding behind after a modular UI/content path changes: temporary loggers, base64 thumbnail caches replaced by spritesheets, option caches for hardcoded choices, and helper caches for helpers that no longer need them.
 
 ## When to stop and ask a human
 
