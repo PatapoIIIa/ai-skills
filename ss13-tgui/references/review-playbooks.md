@@ -5,6 +5,7 @@ Use this file when the request is broad: "review this TGUI", "find bad practices
 ## Contents
 
 - Universal review order
+- Runtime/platform triage
 - Performance review
 - Lifecycle/backend review
 - Frontend/components review
@@ -16,10 +17,24 @@ Use this file when the request is broad: "review this TGUI", "find bad practices
 ## Universal review order
 
 1. Identify the local TGUI generation: backend proc name, component import path, route registration, `ui_assets()` pattern, and neighboring interface style.
-2. Classify the task: implementation, review, performance, frontend cleanup, BYOND control, or appearance picker.
+2. Classify the task: implementation, review, runtime/platform, performance, frontend cleanup, BYOND control, or appearance picker.
 3. Search before judging. Use `scripts/tgui_smell_scan.py` when available, then follow with targeted `rg` for the exact proc/component names in the changed files.
 4. Separate correctness from taste. Flag bugs, lifecycle breakage, stale data, payload/perf risk, accessibility/native-contract loss, and unbounded complexity before style nits.
 5. Prefer deleting redundant machinery over adding wrappers, trackers, caches, or new lifecycle concepts.
+
+## Runtime/platform triage
+
+Read `references/runtime-platform-triage.md`.
+
+Prioritize:
+
+- all browser windows/loading screens white vs one interface blank;
+- BYOND 515/516 browser engine path and WebView2/IE runtime;
+- DPI/compatibility mode, Wine/Linux, cache/resource download, antivirus/disk blocking;
+- `skin.dmf` compiled/loaded and runtime `winset` not writing missing controls;
+- only returning to code-level TGUI review after platform symptoms are ruled out.
+
+Good outcome: the agent does not rewrite payload/render code for a client/runtime blank-window failure.
 
 ## Performance review
 
@@ -93,6 +108,8 @@ Prioritize:
 
 - `ByondUi` only for actual BYOND skin controls such as maps/cameras;
 - stable `id`, `parent: config.window`, correct control `type`, and nonzero layout box;
+- compiled/loaded `skin.dmf` contains the target controls before runtime code mutates them;
+- runtime `winset`/theme/window code does not write to missing ids or detached controls;
 - route registration and wrapper/theme in old in-tree tgui;
 - raw `winset`/`winget` only for BYOND control properties, not normal UI actions;
 - no scroll/resize traps that desync the BYOND control from its DOM anchor.

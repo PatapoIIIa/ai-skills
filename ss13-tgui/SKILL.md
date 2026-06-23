@@ -1,6 +1,6 @@
 ---
 name: "ss13-tgui"
-description: "Use only for SS13 TGUI/web UI work: implementing, reviewing, simplifying, or debugging a tgui interface; DM procs ui_interact/tgui_interact/ui_data/ui_static_data/ui_assets/ui_act/ui_state; SStgui lifecycle; files under tgui interfaces/routes/layouts/components/SCSS; tgui-core or in-tree tgui components; BYOND browser bridge work involving ByondUi, winset/winget/callByond, config.window/config.ref, embedded maps/camera controls; tgui dev-server/HMR; duplicate tgui windows; first-load/per-update tgui performance; or overengineered tgui refactors. Do not use for ordinary SS13 DM gameplay/content/systems work, mobs/items/icons/balance/admin verbs/database/mapping, or generic BYOND code unless the request or changed files also touch TGUI or BYOND browser UI integration."
+description: "Use only for SS13 TGUI/web UI work: implementing, reviewing, simplifying, or debugging a tgui interface; DM procs ui_interact/tgui_interact/ui_data/ui_static_data/ui_assets/ui_act/ui_state; SStgui lifecycle; files under tgui interfaces/routes/layouts/components/SCSS; tgui-core or in-tree tgui components; BYOND browser bridge work involving ByondUi, winset/winget/callByond, config.window/config.ref, embedded maps/camera controls; tgui dev-server/HMR; duplicate tgui windows; blank/white TGUI windows, WebView2/IE/DPI/Wine runtime triage, skin.dmf/window-control breakage; first-load/per-update tgui performance; or overengineered tgui refactors. Do not use for ordinary SS13 DM gameplay/content/systems work, mobs/items/icons/balance/admin verbs/database/mapping, or generic BYOND code unless the request or changed files also touch TGUI or BYOND browser UI integration."
 ---
 
 # SS13 TGUI Interfaces
@@ -9,7 +9,7 @@ Review, implement, simplify, and debug TGUI interfaces in BYOND/DM + React codeb
 
 ## Activation guard
 
-Use this skill only when the request or changed files include a TGUI-specific signal: `tgui/` frontend files, `ui_interact`/`tgui_interact`, `ui_data`, `ui_act`, `SStgui`, tgui components, TGUI SCSS, `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, or tgui dev-server/routing work. If the task is normal SS13 DM content or systems work with no UI/webview bridge, do not apply this skill. If the task is ambiguous, inspect the changed paths and nearest procs before leaning on these rules.
+Use this skill only when the request or changed files include a TGUI-specific signal: `tgui/` frontend files, `ui_interact`/`tgui_interact`, `ui_data`, `ui_act`, `SStgui`, tgui components, TGUI SCSS, `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, tgui dev-server/routing work, or runtime symptoms such as blank/white TGUI windows, WebView2/IE, DPI scaling, Wine/Linux browser issues, client cache/resources, or `skin.dmf`/window-control breakage. If the task is normal SS13 DM content or systems work with no UI/webview bridge, do not apply this skill. If the task is ambiguous, inspect the changed paths and nearest procs before leaning on these rules.
 
 ## The one root cause
 
@@ -26,10 +26,11 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 5. **Keep the update path standard.** `ui_act` returning truthy already fires `SStgui.update_uis(src)`. For state changed *outside* `ui_act`, call `SStgui.update_uis(src)` at the change site. Nothing else.
 6. **Treat BYOND controls as a bridge, not React.** If the interface embeds a map/camera/control with `ByondUi`, inspect the local `ByondUi` and BYOND bridge source before changing it. Read `references/byond-ui-and-devserver.md`.
 7. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
-8. **Measure before optimizing.** No caches or counters without a demonstrated cost.
-9. **Delete measurement scaffolding after it answers the question.** Temporary disk loggers, render counters, timing vars, and per-action traces are useful while diagnosing TGUI latency, but they are not part of the feature. Once performance is confirmed, remove the proc definitions, globals, call sites, and dead cache plumbing in the same cleanup pass.
-10. **For broad reviews, run the read-only smell scan when it will save time.** `scripts/tgui_smell_scan.py` flags likely hotspots (`icon2base64`, manual UI refs, autoupdate off, temporary loggers, `useLocalState`, suspicious `Box as`, etc.). Treat hits as leads for inspection, not as linter failures.
-11. **Review against the checklist below.**
+8. **Triage runtime blank-window failures before code optimization.** If the report is white/blank windows, all popups broken, WebView2/IE, DPI scaling, Wine/Linux, client cache/resources, antivirus/disk blocking, or `skin.dmf`/window-control breakage, read `references/runtime-platform-triage.md` before blaming React render, `ui_data()`, or payload size.
+9. **Measure before optimizing.** No caches or counters without a demonstrated cost.
+10. **Delete measurement scaffolding after it answers the question.** Temporary disk loggers, render counters, timing vars, and per-action traces are useful while diagnosing TGUI latency, but they are not part of the feature. Once performance is confirmed, remove the proc definitions, globals, call sites, and dead cache plumbing in the same cleanup pass.
+11. **For broad reviews, run the read-only smell scan when it will save time.** `scripts/tgui_smell_scan.py` flags likely hotspots (`icon2base64`, manual UI refs, autoupdate off, temporary loggers, `useLocalState`, suspicious `Box as`, etc.). Treat hits as leads for inspection, not as linter failures.
+12. **Review against the checklist below.**
 
 ## Standard backend pattern
 
@@ -106,6 +107,7 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - Were temporary performance loggers, timing locals, render counters, and obsolete thumbnail/base64 caches removed after the final approach was chosen?
 - For appearance pickers, are large option catalogs delivered as assets/spritesheets plus ids instead of repeated base64 strings in static data?
 - Is a slow *first* open diagnosed as framework/WebView/asset transfer (slow on BYOND 516), not blamed on render or payload? Is per-click slowness diagnosed separately as update cost?
+- If the symptom is white/blank TGUI or all browser popups failing, were BYOND version, WebView2/IE, DPI/compatibility mode, Wine/Linux, client cache/resources, antivirus/disk blocking, and `skin.dmf`/`winset` checked before changing interface code?
 - Is each frontend element chosen by semantics per the decision matrix — `Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text — rather than raw tags doing a component's job **or** `Box as="..."` impersonating native tags? Are remaining raw tags justified (semantics, native attributes, wrapper ref contracts) and commented where non-obvious?
 - If `ByondUi` is present, is it reserved for real BYOND controls, anchored to `config.window`, given a stable id when needed, and kept out of scrolling/zero-size layout traps?
 - Is SCSS proportional to the problem (not 1000+ lines re-implementing component layout), free of absolute-pixel layout, and reusing the shared theme base rather than a one-off palette or a bespoke scaling control?
@@ -119,6 +121,7 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 - `references/source-corpus.md` — comparative map across tgstation, Vanderlin, cmss13, BandaStation: what was sampled, and which rules are universal vs fork-local. **Read first when unsure how far a rule generalizes.**
 - `references/tgui-workflow.md` — backend/frontend split, the data-vs-presentation contract, full review checklist with rationale.
 - `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
+- `references/runtime-platform-triage.md` — blank/white TGUI windows, WebView2/IE, DPI scaling, Wine/Linux, client cache/resources, antivirus/disk blocking, `skin.dmf`, and runtime `winset` failures. **Read before code-level performance review when the symptom is broad browser-window failure.**
 - `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
 - `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
 - `references/review-playbooks.md` — task-specific review order for performance, lifecycle/backend, frontend/components, appearance pickers, BYOND controls, and refactors. **Read for broad review requests or when asked to find bad practices.**
@@ -127,7 +130,7 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 
 Bundled script: `scripts/tgui_smell_scan.py` is a read-only first-pass scanner for broad reviews. Run it on changed TGUI files or a narrow directory, then inspect each hit against the references above.
 
-For performance reviews, read `references/performance-and-lifecycle.md`; it includes the lifecycle rules plus concrete bad/good patterns from appearance preview and picker work.
+For blank/white window reports, read `references/runtime-platform-triage.md` before performance review. For code-level performance reviews, read `references/performance-and-lifecycle.md`; it includes the lifecycle rules plus concrete bad/good patterns from appearance preview and picker work.
 
 ## External references (summarize and link, don't copy; all version-sensitive)
 

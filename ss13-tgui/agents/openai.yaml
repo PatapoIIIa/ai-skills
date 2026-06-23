@@ -1,4 +1,4 @@
 interface:
   display_name: "SS13 TGUI"
   short_description: "Review/debug SS13 tgui interfaces and BYOND UI bridges"
-  default_prompt: "Use $ss13-tgui to review this SS13 TGUI change: confirm local proc/import/route conventions, inspect ui_interact/tgui_interact, ui_data/ui_static_data/ui_assets/ui_state/ui_act, frontend/SCSS, ByondUi bridge usage, action security, JSON shape, performance smells, and prefer deleting redundant lifecycle/cache/logging machinery."
+  default_prompt: "Use $ss13-tgui to review this SS13 TGUI change: confirm local proc/import/route conventions, inspect ui_interact/tgui_interact, ui_data/ui_static_data/ui_assets/ui_state/ui_act, frontend/SCSS, ByondUi bridge usage, action security, JSON shape, performance smells, distinguish blank-window WebView2/IE/DPI/Wine/skin.dmf runtime failures from code-level TGUI bugs, and prefer deleting redundant lifecycle/cache/logging machinery."

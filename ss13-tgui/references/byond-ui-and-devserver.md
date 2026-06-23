@@ -62,9 +62,12 @@ Check these before rewriting the UI:
 - `params.id` is unique, stable when needed, and matches any DM-side map/control ref.
 - The DOM container has nonzero width/height and is not clipped by wrapper/scroll CSS.
 - The BYOND control `type` and params are valid for the local skin params.
+- The compiled/loaded `skin.dmf` actually contains the target control ids/types; build wrappers can omit the expected skin.
+- Runtime `winset`/theme/window code is not writing to missing control ids, which can create detached or misparented controls.
 - The backing DM code creates or selects the map/control target expected by the frontend.
 - The local `ByondUi` implementation updates position on the events your layout needs; old code handles render/update and debounced resize, not arbitrary scrolling.
 - Browser/engine support is adequate for the local implementation.
+- If all browser windows are blank, read `references/runtime-platform-triage.md` first; this checklist is for embedded controls or one-interface failures.
 
 ## Routes in old in-tree tgui
 
