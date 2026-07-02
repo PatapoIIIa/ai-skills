@@ -24,6 +24,7 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 3. **Register the frontend where this generation requires it.** Older in-tree tgui uses a central `routes.js` table keyed by the DM interface name; missing route entries render a "Route entry missing" fallback. Modern forks may auto-discover or use a different routing table. Copy the local route/import/wrapper/theme pattern.
 4. **Implement data-driven.** Backend sends *data*; frontend decides *presentation*. `ui_data()` for dynamic state; `ui_static_data()` for heavy, rarely-changing metadata (an optimization for big payloads — not mandatory for small UIs, and changing it requires an explicit `update_static_data()` push); `ui_assets()` for static assets.
 5. **Keep the update path standard.** `ui_act` returning truthy already fires `SStgui.update_uis(src)`. For state changed *outside* `ui_act`, call `SStgui.update_uis(src)` at the change site. Nothing else.
+   **Autoupdate is a per-tick tax, not a convenience default.** With `set_autoupdate(TRUE)`, `ui_data()` runs every SStgui tick for *every* open viewer — any catalog building, text cleaning, or icon work inside it burns CPU between user actions and re-serializes the full payload each tick. Prefer autoupdate OFF with pushes at change sites; if something genuinely needs ticking (a countdown), send one timestamp and count down client-side. If autoupdate must stay on, cache every expensive `ui_data` block and invalidate at the single funnel all mutations already pass through — the cache is then one null-assignment, not a signature zoo.
 6. **Treat BYOND controls as a bridge, not React.** If the interface embeds a map/camera/control with `ByondUi`, inspect the local `ByondUi` and BYOND bridge source before changing it. Read `references/byond-ui-and-devserver.md`.
 7. **Pick elements by semantics, then style minimally.** Decide what each element *is* (action, titled panel, layout block, inline text) and pick the construct whose behavioral contract matches — see the decision matrix below. Never blanket-replace HTML tags with `Box as="..."`; keep SCSS proportional to the problem.
 8. **Triage runtime blank-window failures before code optimization.** If the report is white/blank windows, all popups broken, WebView2/IE, DPI scaling, Wine/Linux, client cache/resources, antivirus/disk blocking, or `skin.dmf`/window-control breakage, read `references/runtime-platform-triage.md` before blaming React render, `ui_data()`, or payload size.
@@ -58,9 +59,18 @@ Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such v
 
 ## Appearance preview pickers
 
-For high-cardinality appearance pickers, prefer `ui_assets()` plus a spritesheet and a small static catalog of stable CSS class names. Do not send one base64 thumbnail per option through `ui_static_data()` once the spritesheet is authoritative; delete the old thumbnail proc and global cache instead of leaving a parallel path.
+Delivery mechanism is a hierarchy — pick by how the image changes, not by habit:
 
-Base64 is not banned. `/tg/` still uses it for rare dynamic photos, one-off previews, or cases where a sprite cannot be represented by the normal icon reference. The performance smell is **repeated base64 option catalogs** and synchronous thumbnail generation in hot paths; for many stable options, use assets/spritesheets plus ids.
+1. **Live, per-player, frequently-changing scene (character doll, camera, minimap): `ByondUi` map_view FIRST.** This is the priority target, not an exotic option. A `/atom/movable/screen/map_view` shows the preview mob natively (appearance streaming): zero encoding, zero payload in `ui_data`, instant updates, free rotation via `setDir`. `/tg/`'s `char_preview` is the canonical shape: the screen object owns a per-preferences dummy, `update_body()` sets `appearance = render_preview(body)`, tgui embeds it by `mapRef`. Fall back to flattened base64 only when the infra genuinely can't apply (no map_view in the fork, headless render, image must leave the client).
+2. **High-cardinality static catalogs (style cards): `ui_assets()` + spritesheet** and a small static catalog of stable CSS class names. Do not send one base64 thumbnail per option through `ui_static_data()` once the spritesheet is authoritative; delete the old thumbnail proc and global cache instead of leaving a parallel path.
+3. **Dynamic one-offs (photos, rare previews): base64 is fine** — and for *per-change dynamic* images the asset system is actively WORSE than base64: assets are generated and transported once by design, so a per-click preview would mean a new asset + a new client round-trip per change. Do not "migrate previews to assets" as a blanket rule; migrate catalogs to assets and live scenes to map_view. When a flattened single image is genuinely required and the fork is on BYOND 515+, `client.RenderIcon(atom)` beats server-side `getFlatIcon`: it is the client renderer itself, so overlays, transforms, and filters can't drift (see `references/byond-client-api.md`); keep `getFlatIcon` for headless/CI paths.
+
+The performance smell is **repeated base64 option catalogs** and synchronous thumbnail generation in hot paths; for many stable options, use assets/spritesheets plus ids.
+
+Two base64-preview pitfalls proven in the field:
+
+- **Custom icon flatteners drift from native rendering.** A hand-rolled `getFlatIcon` clone will not read `appearance.transform` (matrix scales silently do nothing in the preview while working in-game) and its canvas-growth math diverges once several pixel-offset overlays stack. Prefer the native flattener whenever sprites fit its bounds; if you must scale for a flattener, resize the icon itself (`icon.Scale`), never the transform.
+- **Preview-only state must bypass validated preferences.** `write_preference()` silently returns FALSE for out-of-domain values (`is_valid()`), so "force the dummy nude for the preview" via a pref write can silently not happen. Set preview-only state directly on the dummy after `apply_prefs_to()` and rebuild its body — never through the validated pref pipeline.
 
 Keep picker state simple. If a background picker has become `None` / `White` / `Dark`, send those values directly and remove turf thumbnail renderers and option caches. If a helper now returns an `icon` directly, remove any stale cache that used to wrap that helper.
 
@@ -68,7 +78,7 @@ For hover previews that replace an existing sprite accessory, render the base do
 
 ## ByondUi / BYOND controls
 
-Use `ByondUi` only for actual BYOND skin controls that must be layered over the browser, most commonly embedded maps/camera views. It is not a replacement for normal tgui `Button`, `Input`, `Section`, or HTML layout. In old in-tree tgui, `ByondUi` computes its DOM bounding box and calls BYOND `winset` with `id`, `parent`, `type`, `pos`, and `size`; on unmount/beforeunload it clears the control's `parent`. That means the React element is a positioning anchor, while the visible control is still BYOND-owned.
+Use `ByondUi` only for actual BYOND skin controls that must be layered over the browser, most commonly embedded maps/camera views — including the **map_view live-preview pattern above, which should be your default for character/scene previews** when the fork has the infra (check `_onclick/hud/map_popups.dm` for `/atom/movable/screen/map_view`/`assigned_map` and grep for an existing `ByondUi` consumer such as a color-matrix editor or camera console to copy). It is not a replacement for normal tgui `Button`, `Input`, `Section`, or HTML layout. In old in-tree tgui, `ByondUi` computes its DOM bounding box and calls BYOND `winset` with `id`, `parent`, `type`, `pos`, and `size`; on unmount/beforeunload it clears the control's `parent`. That means the React element is a positioning anchor, while the visible control is still BYOND-owned.
 
 When using or reviewing it:
 
@@ -77,6 +87,7 @@ When using or reviewing it:
 - Keep it in a stable, nonzero-sized container; old implementations update position on render and debounced window resize, not every scroll event.
 - Use `act()`/`ui_act` for gameplay mutations. Use raw `winset`/`winget`/`callByond` only for BYOND window/control properties or framework bridge code.
 - Debug blank controls by checking route registration, `config.window`, id uniqueness, CSS/container size, clipping/scrolling, backing DM map/control setup, and local browser support before rewriting the interface.
+- For the skin-parameter vocabulary (map `zoom-mode`/`view-size`/`icon-size`, window `is-transparent`, global `winget(null, ...)`, `byondStorage`, client dot-commands) consult `references/byond-client-api.md` before inventing a workaround — the client usually already has the knob.
 
 ## Choosing frontend elements (decision matrix)
 
@@ -103,6 +114,9 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - Is the backend sending only data — no CSS classes, layout anchors, or display labels the frontend could derive?
 - Does the frontend type the actual JSON shape (DM associative lists become objects; sequential lists become arrays) and avoid storing values in React state when they can be derived directly?
 - If autoupdate is off, does the update story collapse to `SStgui.update_uis(src)` at each change site?
+- If autoupdate is ON, is it actually needed (timer → client-side countdown instead)? Is every expensive `ui_data` block cached with invalidation at the single mutation funnel, so per-tick refreshes reuse the cache?
+- Are live previews (doll/camera/minimap) delivered via `ByondUi` map_view where the fork has the infra, spritesheet assets reserved for static catalogs, and base64 reserved for dynamic one-offs — with no "migrate dynamic previews to assets" regressions?
+- For a crash inside a shared package (tgui-panel/tgui-say/common), was the site diffed against current /tg/ first, and is the fix an upstream backport rather than an invented local variant?
 - Is any cache justified by *measured* cost? (Caching shared, immutable, same-for-everyone data globally is fine; caching per-user dynamic payloads keyed on a counter is not.)
 - Were temporary performance loggers, timing locals, render counters, and obsolete thumbnail/base64 caches removed after the final approach was chosen?
 - For appearance pickers, are large option catalogs delivered as assets/spritesheets plus ids instead of repeated base64 strings in static data?
@@ -111,6 +125,14 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - Is each frontend element chosen by semantics per the decision matrix — `Button` for actions, `Section` for titled panels, `Box` for layout blocks, `Box as="span"` for inline text — rather than raw tags doing a component's job **or** `Box as="..."` impersonating native tags? Are remaining raw tags justified (semantics, native attributes, wrapper ref contracts) and commented where non-obvious?
 - If `ByondUi` is present, is it reserved for real BYOND controls, anchored to `config.window`, given a stable id when needed, and kept out of scrolling/zero-size layout traps?
 - Is SCSS proportional to the problem (not 1000+ lines re-implementing component layout), free of absolute-pixel layout, and reusing the shared theme base rather than a one-off palette or a bespoke scaling control?
+
+## Shared tgui packages (tgui-panel, tgui-say, common chat code)
+
+When a crash lives in a package shared with upstream (`tgui-panel`, `tgui-say`, `common/`), **diff the crash site against current /tg/ before writing any fix** — forks routinely lag, and the guard you are about to invent often already exists upstream. Backporting the upstream hunk 1:1 is a sync, not a divergence, and is acceptable even under strict "don't touch upstream files" policies; an original fix in the same file is not. Field case: a fork's chat renderer lacked upstream's `if (!Element) { log; removeAttribute; continue; }` guard around `TGUI_CHAT_COMPONENTS[targetName]` — every replayed history message with an unknown `data-component` threw minified React #130.
+
+Diagnostic signatures for shared-package crashes: **minified React error #130** = rendering `undefined` as a component (unknown name in a component map, or a broken import after a tgui-core bump); **a burst of hundreds of identical errors within seconds of one player connecting** = persisted chat history replaying incompatible messages — a client-side data problem masquerading as "player X overloads the server". (Persistence rides `byondStorage`, which outlives builds by design — see `references/byond-client-api.md`.)
+
+Chat-embedded components are a documented protocol, not ad-hoc HTML (`tgui/docs/chat-embedded-components.md` in /tg/): DM emits `<span data-component="Name" data-yourprop="...">`; the renderer only instantiates names whitelisted in `TGUI_CHAT_COMPONENTS` and only maps attributes listed in `TGUI_CHAT_ATTRIBUTES_TO_PROPS` (attributes are lowercase-only, hence the map). Values arrive as strings with fixed coercion rules: `"$true"`/`"$false"` → booleans (the `$` exists so literal "true" stays a string), parseable numbers → numbers, everything else → string. Adding a component = import + both maps; emitting one from DM without whitelisting it is exactly the React #130 crash above.
 
 ## When repo patterns conflict
 
@@ -123,7 +145,8 @@ Pick the closest authority: **local framework source and neighboring interfaces 
 - `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
 - `references/runtime-platform-triage.md` — blank/white TGUI windows, WebView2/IE, DPI scaling, Wine/Linux, client cache/resources, antivirus/disk blocking, `skin.dmf`, and runtime `winset` failures. **Read before code-level performance review when the symptom is broad browser-window failure.**
 - `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
-- `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls, legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
+- `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls (incl. the map_view live-preview recipe), legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
+- `references/byond-client-api.md` — the applied BYOND↔TGUI catalog distilled from the official BYOND Reference + /tg/'s bridge: the three bridge layers (tgui / tgui_window popups / raw browse-output-Topic), the full `Byond` JS object surface (incl. the 2048-char href limit and XHR fallback, `__number__` JSON reviver, strictMode FatalError logging), native 516 `BYOND` object vs tgui's `Byond`, `byondStorage` (hub/server/domain) persistence, calling JS from DM via `output("...", "browser:func")`, skin control/parameter cheat sheet (window/browser/map/output/input/global params), and client dot-commands. **Read when touching the DM↔JS bridge, custom popups, skin params, or client persistence.**
 - `references/review-playbooks.md` — task-specific review order for performance, lifecycle/backend, frontend/components, appearance pickers, BYOND controls, and refactors. **Read for broad review requests or when asked to find bad practices.**
 - `references/case-study-overengineered-interface.md` — anonymized, reusable lessons from a reviewed TGUI redesign.
 - `references/refactor-timeline.md` — anonymized progression from bespoke machinery to framework-native patterns.

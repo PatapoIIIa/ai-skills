@@ -103,6 +103,17 @@ Old in-tree tgui bridge helpers:
 
 Keep the distinction clear: `act` is for validated gameplay/UI actions; `winset`/`winget` are for window/control plumbing.
 
+## map_view live previews (the priority pattern for character dolls)
+
+For a live per-player preview (character doll in a preferences menu, dressing room, records mugshot), the `ByondUi` + `/atom/movable/screen/map_view` pairing beats every image-encoding approach: no `icon2base64`, no payload in `ui_data`, native rendering, instant updates, rotation is just `setDir` on the dummy. `/tg/`'s `char_preview` (code/modules/client/preferences.dm) is the canonical shape:
+
+- **Screen object owns the preview mob.** `/atom/movable/screen/map_view/char_preview` holds a per-preferences `var/mob/living/carbon/human/dummy/body`; its `update_body()` rebuilds the doll and sets `appearance = preferences.render_new_preview_appearance(body)`. `Destroy()` qdels the body and nulls the back-reference.
+- **Per-viewer registration.** The view gets a unique `assigned_map` key and is displayed to the owning client only (`generate_view(map_key)` + `display_to(user)` in the fork's `map_popups.dm`). One view per open menu, created on `ui_interact`, torn down on close — never a global shared dummy with busy-locking.
+- **tgui side is a dumb anchor.** Backend sends the map key (`data["character_preview_view"]`); frontend renders `<ByondUi params={{ id: mapRef, type: 'map' }}>` (tg wraps this as `common/CharacterPreview`). No image state in React at all.
+- **Interactions mutate the dummy, not an image pipeline.** Rotation = `setDir`; hover-preview of a candidate accessory = apply it to the dummy and restore on hover-out; backgrounds = a backdrop screen object or plane. Every base64 cache, flatten proc, and hover-base compositor becomes deletable.
+
+Feasibility check before migrating a base64 preview: the fork has `map_view`/`assigned_map` infra (grep `_onclick/hud/map_popups.dm`) and at least one working `ByondUi` consumer to copy registration from (camera console, color-matrix editor). Both present → migrate; the base64 path should not grow new features.
+
 ## Dev-server workflow
 
 Old `/tg/` tgui README documents two equivalent paths:
