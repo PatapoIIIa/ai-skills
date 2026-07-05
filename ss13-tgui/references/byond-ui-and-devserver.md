@@ -114,6 +114,8 @@ For a live per-player preview (character doll in a preferences menu, dressing ro
 
 Feasibility check before migrating a base64 preview: the fork has `map_view`/`assigned_map` infra (grep `_onclick/hud/map_popups.dm`) and at least one working `ByondUi` consumer to copy registration from (camera console, color-matrix editor). Both present → migrate; the base64 path should not grow new features.
 
+Sizing warning: out of the box the doll renders TINY, and the control's world canvas is engine-chosen and unstable (skin-default sized in most configurations, silently flipping to the object bbox after layout changes). Pin the canvas with an invisible background spanning the intended frame, then size via the `zoom` skin param with canvas-center positioning; read `embedded-map-geometry.md` before attempting transforms, icon scaling, or auto-fit tricks — all were field-tested and failed.
+
 ## Dev-server workflow
 
 Old `/tg/` tgui README documents two equivalent paths:
