@@ -19,6 +19,8 @@ Do not start by optimizing React render or `ui_data()` when the report is a blan
 - **A BYOND map/camera/control inside TGUI is blank or misplaced** - use `references/byond-ui-and-devserver.md`; likely `ByondUi`, `winset`, `config.window`, control id/type, size, clipping, scroll, or backing DM setup.
 - **First open is slow but later actions are smooth** - likely framework/WebView/asset transfer. Do not treat this as per-click payload cost.
 - **Every click/update is slow after the window is loaded** - return to `references/performance-and-lifecycle.md`.
+- **One player's clicks are intermittently ignored, embedded maps show black rectangles, or chat stutters — while server metrics (TiDi/maptick) are healthy** - suspect the client Topic rate limiter before any code. Grep game.log for `topic limit` and read which `type=` was dropped; a flood of `type=log&fatal=1` there means a crashed tgui window is burning that client's budget. See "The client→server topic budget" in `references/performance-and-lifecycle.md`.
+- **The whole client hitches every 10–30 seconds (all windows, even the map), server metrics healthy** - suspect a bloated byondstorage disk json before any interface code: `Documents\BYOND\browserstorage\*.json` is shared across every server under the hub entry and flushed every ~10 s, so chat history persisted there grows it without bound. Deleting the file is the local workaround; `references/client-storage.md` has the real fix and lineage.
 
 ## Client/runtime checks
 

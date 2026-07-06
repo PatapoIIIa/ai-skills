@@ -6,6 +6,7 @@ Read this when diagnosing TGUI slowness, deciding whether to disable autoupdate,
 - How the lifecycle actually works (from source)
 - Window pooling / dedup
 - Autoupdate and the update path
+- The client→server topic budget (rate limiting)
 - Static data changes need an explicit push
 - First-load delay vs per-update delay (critical diagnosis)
 - Asset caching (webview already does it)
@@ -36,6 +37,26 @@ Autoupdate is a per-UI flag (`var/autoupdate = TRUE`, toggled with `ui.set_autou
 - Prefer `SStgui.update_uis(src)` over grabbing one interface and calling `send_update()`. The manual approach only refreshes the one UI you happened to track and reintroduces the "store a ref" anti-pattern.
 
 If you disabled autoupdate, the whole update story should collapse to: "on change, call `SStgui.update_uis(src)`." No wrapper proc, no stored UI, no per-user bookkeeping unless a profile proves it is needed. Disabling autoupdate is a legitimate optimization (it stops the per-second re-render of an expensive payload) — but only if the manual path is complete.
+
+## The client→server topic budget (rate limiting)
+
+Every message the webview sends to the server — `act/*`, tgui-panel `ping`, the error relay (`type=log`), `setSharedState`, ByondUi `renderByondUi`/`unmountByondUi` — is a `client/Topic()` call, and tg-family forks rate-limit Topic in `client_procs.dm` via config `SECOND_TOPIC_LIMIT` / `MINUTE_TOPIC_LIMIT` (typical defaults 10/sec, 100/min). These are **fixed-window counters**: once the minute budget is burned, *every* topic from that client is dropped until the window rolls — not just the offending ones. Exemptions are narrow: clients with an admin holder, the `statbrowser` window, and any specially whitelisted handlers (e.g. a native-say datum). Field data: an actively-used live-preview menu (hover previews ~5-8/s while mousing a grid, held-key button autorepeat ~7/s, geometry reports, 3 embedded maps) legitimately exceeds both defaults.
+
+Dropped topics are silent for the UI (a `to_chat` "action was ignored" line + a game.log entry). The symptom set masquerades as lag while server metrics (TiDi, maptick) are healthy:
+
+- dropped `act` → dead/inconsistent clicks ("everything is jerky");
+- dropped `renderByondUi` → embedded map controls never get placed/resized (black rectangle where the doll/camera should be);
+- dropped tgui-panel `ping` → the chat panel thinks the connection died and stutters through reconnects.
+
+**Diagnose from game.log, not from feel:** grep `topic limit`, split hits per player and per-second vs per-minute, and read the `type=`/payload in each logged line — it names exactly which message class was dying. One field incident: 467 hits looked like "everyone lags", but 429 belonged to a single client whose crashed tgui-panel was flooding `type=log&fatal=1` error relays (see the crash-flood cascade below); the healthy players' ~38 were short bursts during scale/fullscreen storms.
+
+**Budget the interaction at design time.** Count topics per click before shipping: one "scale" click in a reviewed menu cost `act` + geometry report + 3 synthetic `window.resize` dispatches × 3 ByondUi maps × 1 `renderByondUi` each ≈ 11 topics; six clicks in 4s ≈ 66 topics — both limits gone. Mitigations in priority order:
+
+1. **Eliminate framework chatter you don't need.** `ByondUi` sends a `renderByondUi` topic on *every* internal `render()` — mount plus every `window.resize` (100ms debounce) — solely to register the control id for the server-side crash-cleanup fallback (`terminate_byondui_elements`). If your DM already owns the control lifecycle (own teardown proc), pass `phonehome={false}`: topics stop entirely, positioning still works (winset is not a topic), and the component still unparents client-side on unmount and `beforeunload` regardless.
+2. **Throttle/debounce the chatty paths client-side** — hover relays, geometry reports, synthetic resize retries (each dispatch multiplies across every mounted ByondUi).
+3. **Raise the config limits** for genuinely topic-heavy UIs — a server remedy, not a code fix, and the limiter still guards against runaway floods.
+
+**The crash-flood cascade** (pairs with the shared-packages section in SKILL.md): a fatally-crashed tgui window relays each JS error as a `type=log&fatal=1` topic. The flood burns the client's whole budget, and the limiter then eats their *legitimate* topics — so one broken window makes every window on that client look broken ("player X can't open anything"). Fix the crash (usually an upstream backport or persisted-history data problem), tell the player to clear the client cache; do not chase the phantom lag in your interface code.
 
 ## Static data changes need an explicit push
 

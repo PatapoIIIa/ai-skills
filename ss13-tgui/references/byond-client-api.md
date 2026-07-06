@@ -31,7 +31,9 @@ older webviews. Check which one your page actually has before calling.
   `Byond.command('.quit')`).
 - `Byond.sendMessage(type, payload)` — the tgui message protocol (adds `tgui=1`, `window_id`,
   JSON-encodes payload). Extra top-level fields skip JSON and arrive in DM's `href_list` — cheaper
-  for high-frequency messages (`{type, ref}` instead of a payload decode).
+  for high-frequency messages (`{type, ref}` instead of a payload decode). Every send is a
+  `client/Topic()` call and counts against the client's `SECOND_TOPIC_LIMIT`/`MINUTE_TOPIC_LIMIT`
+  budget (see "The client→server topic budget" in `references/performance-and-lifecycle.md`).
 - `Byond.subscribe(fn)` / `Byond.subscribeTo(type, fn)` — receive DM→JS `send_message()` traffic
   (queued until first subscriber; `window.update` is the wire).
 - `Byond.parseJson(text)` — JSON.parse with the `__number__` reviver (BYOND encodes some numbers
@@ -61,10 +63,17 @@ persistence enable `byondstorage` via browser-options winset, then use (same API
 - `serverStorage` — same hub path + same server address;
 - `domainStorage` — same but ignoring port.
 
-This is what modern chat persistence rides on. Practical implication from the field: persisted
-data **outlives builds** — client-side stores replay old payloads into new bundles, so renderers
-of persisted content need unknown-shape guards (see the chat `data-component` crash case in
-SKILL.md).
+**Treat byondstorage as a small-settings store, not a database.** It is one json file per hub
+entry on the player's disk (for SS13: `Documents\BYOND\browserstorage\Exadv1.spacestation13.json`,
+shared by every SS13 server the player visits, regardless of codebase), flushed roughly every
+10 seconds — large payloads (chat logs) turn that flush into whole-client hitches, which is why
+current /tg/ moved chat persistence to an iframe+IndexedDB stack and demoted byondstorage to a
+fallback. Generations, behavior traps, and fork guidance: `references/client-storage.md`.
+
+Chat persistence rode on this in the 516 era and still does on many forks. Practical implication
+from the field: persisted data **outlives builds** — client-side stores replay old payloads into
+new bundles, so renderers of persisted content need unknown-shape guards (see the chat
+`data-component` crash case in SKILL.md).
 
 ## Skin controls and the parameters worth knowing
 
@@ -110,8 +119,16 @@ skin control I/O; `winclone(player, source_id, clone_id)` — clone skin control
   the native answer to "flatten a doll for a preview image": unlike server-side `getFlatIcon`
   clones it cannot drift from what the player actually sees (it IS the client renderer). It's a
   client proc (server can't render), so it needs a connected client and a round-trip — fine for
-  previews, wrong for headless/CI paths. Preview hierarchy therefore reads: ByondUi map_view
-  (live, zero encoding) > `RenderIcon` (client-exact single image) > server `getFlatIcon`
+  previews, wrong for headless/CI paths. **SS13 caveat that keeps it from being a drop-in:** it
+  composites the appearance **as if no plane masters existed**, and /tg/-style codebases bake
+  emissive blockers into appearances as plain overlays (tg PR #57934, a maptick optimization) —
+  so anything emissive-adjacent renders its blocker literally, a grey/black silhouette stamped
+  over the sprite (same failure family as PR #91616's "black character previews" inside the
+  render-plate pipeline). Current tgstation ships **zero** RenderIcon call sites; live previews go
+  through map_view, where the real plane pipeline runs. Reserve RenderIcon for atoms whose
+  appearance carries no plane-dependent overlays, or strip the emissive overlays off a copy
+  first. Preview hierarchy therefore reads: ByondUi map_view (live, zero encoding, planes work) >
+  `RenderIcon` (client-exact single image, plane-master caveat above) > server `getFlatIcon`
   (no client needed) > hand-rolled flatteners (never).
 - **`client.MeasureText(text, style, width)` (513+)** — returns rendered `"WxH"` for maptext/CSS
   text; the correct way to size maptext popups instead of guessing character widths.
