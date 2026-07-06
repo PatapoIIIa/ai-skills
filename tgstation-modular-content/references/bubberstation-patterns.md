@@ -50,6 +50,8 @@ DM merges all declarations of a type across files. So from a modular file you ca
 	icon = 'modular_zubbers/icons/obj/guns/my_gun.dmi'
 ```
 
+**Why same-type overrides work — the hidden include-order rule.** `/obj/item/gun/shoot_live_shot(...)` in a modular file re-defines a proc on the *same type* that upstream declared it on (`/obj/item/gun/proc/shoot_live_shot`). DM resolves this by include order: the later definition in the `.dme` overrides the earlier one, and `..()` inside it calls the earlier (upstream) definition. This is why modular includes always sit at the **tail** of the `.dme` (Bubberstation's modular block after the upstream block; Vanderlin's aggregator is the second-to-last line). If a modular override were included *before* the upstream file, `..()` would not reach the upstream body — and both orders compile silently. Verify when in doubt: `grep -n "upstream_file.dm\|your_module" <project>.dme` and confirm your include comes later. (Compile-verified on Vanderlin, DM 516: wrapper `. = ..()` + full-body same-type override both build clean with the module included last.)
+
 The handbook's explicit warnings:
 - Do **not** copy a whole upstream proc to change one line — it shadows upstream and silently drops future upstream changes to that proc. Only wrap (`..()`).
 - Watch performance when wrapping **hot procs** (`Life()`, etc.); each override adds a call. There, a tagged upstream edit may be the better trade — a judgment call, not an automatic modular win.
@@ -142,4 +144,6 @@ if(new_condition)
 
 ## 9. The include list
 
-New `.dm` files compile in only when `#include`d. Bubberstation appends modular includes to the main `tgstation.dme` between `// BEGIN_INCLUDE` and `// END_INCLUDE` (a long flat list, kept sorted). CI enforces that every `.dm` is included (`tools/ticked_file_enforcement/`): a file you forgot to include passes your local build by accident only if it's unreferenced, and fails the check otherwise. Add the `#include` line in the correct sorted position matching its neighbors. (Contrast: Vanderlin includes one aggregator line and nests the rest — see `fork-comparison.md`.)
+New `.dm` files compile in only when `#include`d. Bubberstation appends modular includes to the main `tgstation.dme` between `// BEGIN_INCLUDE` and `// END_INCLUDE` (a long flat list, kept sorted). CI enforces that every `.dm` is included: `tools/ticked_file_enforcement/schemas/` explicitly lists `modular_skyrat/` and `modular_zubbers/` as scanned directories, so a forgotten include fails CI even if it builds locally. Add the `#include` line in the correct sorted position matching its neighbors. (Contrast: Vanderlin includes one aggregator line and nests the rest — see `fork-comparison.md`.)
+
+**Exception — modular unit tests live inside `code/`.** Tests must sit where the test framework scans: Bubberstation keeps fork tests in `code/modules/unit_tests/~skyrat/` (the `~` prefix again sorting them after upstream tests, and the ticked-file schema special-cases that path). Creating a file under `code/` is acceptable *only* for cases like this where upstream machinery dictates the location — keep the fork-marking prefix.

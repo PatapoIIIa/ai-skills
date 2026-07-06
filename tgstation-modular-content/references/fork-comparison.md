@@ -1,6 +1,6 @@
-# Fork comparison: Bubberstation vs Vanderlin vs cmss13-MARINES
+# Fork comparison: Bubberstation vs Vanderlin vs cmss13-MARINES (+ Twilight-Axis)
 
-Static comparison of three /tg/-lineage codebases to separate **universal modular rules** from **fork-specific architecture** that must not leak into a general skill. Focus fork is Bubberstation; the other two are contrast cases.
+Static comparison of /tg/-lineage codebases to separate **universal modular rules** from **fork-specific architecture** that must not leak into a general skill. Focus fork is Bubberstation; the others are contrast cases. Vanderlin's pipeline and the core seams (same-type var add, subtype, `. = ..()` wrap, single-file define) were additionally compile-verified (DM 516, 0 errors/0 warnings).
 
 ## At a glance
 
@@ -38,11 +38,22 @@ These hold for any fork that re-opens /tg/ types and rebases:
 - **Map *import* pipeline.** `modular_abel/dun_world/` regenerates a `.dmm` from an external upstream (Azure-Peak) via a path-replacement table (`config/map.json`), prepare/build scripts, and map-QA python. This is "port a whole map from another game" infrastructure — far heavier than the automapper's "edit a room" need. Specific to their map-import goal.
 - **Theme-based override layout.** Vanderlin organizes by feature theme rather than mirroring upstream paths. Fine for a heavily-diverged fork where most content is net-new, but on a closely-tracking fork the **path-mirroring** of Bubberstation's `master_files/` is easier to maintain (an override sits next to where you'd look for the upstream original). Prefer path-mirroring for overrides unless the local fork has already standardized on themes.
 
+## Twilight-Axis: how modular discipline decays (case study)
+
+Twilight-Axis (RogueTown/Azure-Peak lineage, still merging its upstream) shows the failure mode between "disciplined fork" and "hard fork":
+
+- **Three generations of modular roots** coexist: `modular/` (100 .dm), `modular_deserttown/` (48), `modular_twilight_axis/` (589) — each new team started a new root instead of adopting the old one. All are flat-included in the `.dme`, so everything compiles; nothing tells you which is current.
+- **No handbook, no per-module readmes, no unified edit tag.** `code/` carries a fossil record of tags from merged lineages (`LETHALSTONE EDIT`, `CIT CHANGE`, `AZURE EDIT`, `RATWOOD EDIT`) with no tag for the current fork's own edits.
+- **The convention is dead in practice:** of the last 200 commits, ~163 touch `code/` directly vs ~19 the active modular root — while upstream merges continue, so every one of those direct edits is future conflict surface.
+
+Lessons for the skill: (1) *finding* a modular folder is not enough — check `git log` per root to find the active one and whether the team still honors the convention; (2) modular infrastructure without enforcement (CI include checks, a handbook, a single edit tag) decays within a few fork generations; (3) on such a fork, doing your own work modularly is still right, but flag the decay to the human rather than assuming the local norm matches the folder structure.
+
 ## cmss13-MARINES: the anti-model (mostly)
 
 - cmss13 has **no modular root** — content lives directly in `code/`, and it uses `tgui_interact` rather than `ui_interact`. It is a **hard fork** that no longer tracks /tg/ closely, so "don't edit upstream" is not even a meaningful constraint there.
 - **Lesson, not a pattern:** this is what a codebase looks like when it stops isolating its changes — every file is fork-owned, and re-syncing with /tg/ is effectively impossible. It is the destination a tracking fork is trying *not* to reach. Do not copy its layout onto a fork that still pulls upstream.
 - If you are actually working *in* cmss13 (or any heavy fork with no modular root), the modular rules don't apply — confirm the local workflow first. That case is the final bullet of the SKILL's "When to stop and ask a human."
+- **One thing worth borrowing: the pragma safety net.** cmss13's `code/__pragmas.dm` turns ~25 lint categories into hard compile errors, and several map exactly onto modular-override failure modes: `InvalidOverride` (a modular override whose signature drifted from upstream after a sync), `PointlessParentCall` (`..()` that no longer reaches anything), `DuplicateVariable` (a modular var upstream later added itself), `DuplicateProcDefinition`. A fork that enables these (in DM or via OpenDream/SpacemanDMM lint pass — Vanderlin gates its copy behind `OPENDREAM`) catches stale overrides at compile time instead of at runtime weeks after an upstream sync. When auditing a fork's modular health, check whether such a pragma/lint file exists and runs in CI.
 
 ## Decision: which include style to use on a new fork
 

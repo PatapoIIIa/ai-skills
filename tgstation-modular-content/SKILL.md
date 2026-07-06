@@ -21,7 +21,7 @@ Use this skill when the work adds or changes gameplay content on a fork that tra
 
 The *concepts* below are stable across /tg/ forks; the *folder names, include mechanism, and edit-tag wording are not.* Learn the local convention first — a pattern copied from another fork will not match here.
 
-1. **Find the modular root.** List the repo top level. Look for `modular_<name>/` (Bubberstation: `modular_skyrat/`, `modular_zubbers/`; Vanderlin: `modular_abel/`). That folder, not `code/`, is where your work goes. If there is no modular root, see "When to stop."
+1. **Find the modular root — the *active* one.** List the repo top level. Look for `modular_<name>/` (Bubberstation: `modular_skyrat/`, `modular_zubbers/`; Vanderlin: `modular_abel/`). Old forks accumulate modular roots across generations (e.g. `modular/` → `modular_deserttown/` → `modular_twilight_axis/`); when several exist, check `git log -1 -- <dir>` and recent commit counts per root to find where current work lands, and add there. If there is no modular root, or recent commits mostly bypass it, see "When to stop."
 2. **Find the override sub-layout.** Most forks split it two ways: a path-mirroring folder for *overrides/extensions of upstream types* (Bubberstation: `master_files/`, mirroring the upstream `code/...` path) and a self-contained-module folder for *net-new content* (`modules/<feature>/`). Read `references/bubberstation-patterns.md` for the exact layout.
 3. **Read the fork's own handbook.** Open any `readme.md` / `module_template.md` / `CONTRIBUTING` inside the modular root and obey it — it overrides this skill on naming, tagging, and folder rules. Bubberstation's is `modular_zubbers/readme.md`.
 4. **Learn how files get compiled in.** New `.dm` files do nothing until included. Find whether the fork adds `#include` lines to the main `.dme` (Bubberstation, between `// BEGIN_INCLUDE` / `// END_INCLUDE`) or to a per-module aggregator file that the `.dme` includes once (Vanderlin: `modular_abel/_module.dm`). CI usually *enforces* that every `.dm` is included — a new file that compiles locally can still fail the include check.
@@ -84,6 +84,7 @@ Some tasks cannot be done modularly. Recognize the boundary, stop, and surface i
 - It requires **editing an upstream binary** (`.dmi`/`.ogg`) or an **upstream `.dmm`** in a way the automapper can't express.
 - It depends on **upstream load order** changing, or on a type/proc that does not yet expose any extension point.
 - The fork has **no modular root** at all (a heavy fork like cmss13-MARINES that edits `code/` directly) — here "modular" may not be the local norm; confirm the intended workflow before proceeding.
+- The fork **has modular roots but the convention has decayed** — recent `git log` shows most changes landing directly in `code/` with mixed or missing edit tags, while the fork still merges upstream. Modular work is still the right default, but confirm which root is alive and whether the team wants the discipline restored before investing in it.
 
 When you hit one, report: what you wanted to do, why no modular seam reaches it, and the options (tagged upstream edit with the fork's edit-comment grammar; an upstream PR; or a design change). Let the human choose — a tagged upstream edit is sometimes the right call, but it is the human's call, not a silent default.
 
