@@ -1,7 +1,0 @@
-interface:
-  display_name: "Azure-Peak AI Navigation"
-  short_description: "Route Azure-Peak systems and signals"
-  default_prompt: "Use $azure-peak-ai-navigation to route a gameplay bug through current Azure-Peak paths and signal maps."
-
-policy:
-  allow_implicit_invocation: true

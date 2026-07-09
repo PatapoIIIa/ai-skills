@@ -18,6 +18,12 @@
       "prompt": "Проверь целостность всех трёх семантических баз и почини найденное.",
       "expected_output": "Runs validate_semantic_base.py per base with correct --repo roots, distinguishes real drift from shorthand noise, fixes fast-tier files first, updates stamps, re-syncs deployed copies (diff -rq empty), updates parity notes in integrity.md.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "В C:\\Axis\\Twilight-Axis проверь, как ManorPanel доставляет изображения в TGUI, и составь binding brief. Используй семантическую базу Twilight и ss13-tgui; файлы не изменяй.",
+      "expected_output": "Discovers ai-skills/ai_navigation_twilight through the workspace registry, binds it with ss13-tgui via tgui_guide.md + signal_map.md + coding_standards.md, identifies modular_twilight_axis/manors/code/manor_tgui.dm and tgui/packages/tgui/interfaces/ManorPanel.tsx, verifies /datum/asset/simple/manor + ui_assets() + resolveAsset()/asset mappings, and answers read-only with exact source paths.",
+      "files": []
     }
   ]
 }
