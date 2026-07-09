@@ -58,6 +58,12 @@ When you catch yourself writing infrastructure (window scanners, dirty counters,
 
 Do **not**: store a long-lived `datum/tgui` ref on the domain datum (zero such vars exist in /tg/ outside framework loops), scan/dedupe open windows with a custom helper, or grab one UI and `send_update()` manually when `SStgui.update_uis(src)` exists. `try_update_ui` already finds and refreshes the pooled UI for `(user, src)` — BYOND never truly closes windows, it minimises them. If duplicate windows can open, the standard open path is broken upstream; fix that, don't paper over it.
 
+## Browser asset delivery
+
+For static browser/TGUI assets, prefer the repo's asset pipeline over hardcoded file paths or ad-hoc `browse_rsc()` sends. Define a `/datum/asset/simple`, `/datum/asset/spritesheet`, or existing local equivalent, return it from `ui_assets()`, and reference it through transport-neutral URL helpers: TGUI `resolveAsset()` after `asset/mappings`, `asset.get_url_mappings()` for browse HTML, or `SSassets.transport.get_asset_url()` when DM composes HTML/data. This keeps the same UI working with both the default `browse_rsc` transport and `ASSET_TRANSPORT webroot` / `ASSET_CDN_*` deployments.
+
+Use `/datum/asset/simple/namespaced` when CSS/HTML depends on relative `url(...)` files. Do not route everything through this subsystem: BYOND game resources (`.dmi`, sounds, maps) still belong to the normal resource/.rsc path; live doll/camera/minimap previews should use `ByondUi` map_view where available; per-change dynamic photos, debug icons, and rare one-offs can stay base64 or direct `browse_rsc()`. When adding one interface, register only the files it owns rather than creating a broad catch-all asset datum.
+
 ## Appearance preview pickers
 
 Delivery mechanism is a hierarchy — pick by how the image changes, not by habit:
@@ -121,6 +127,7 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - If autoupdate is off, does the update story collapse to `SStgui.update_uis(src)` at each change site?
 - If autoupdate is ON, is it actually needed (timer → client-side countdown instead)? Is every expensive `ui_data` block cached with invalidation at the single mutation funnel, so per-tick refreshes reuse the cache?
 - Are live previews (doll/camera/minimap) delivered via `ByondUi` map_view where the fork has the infra, spritesheet assets reserved for static catalogs, and base64 reserved for dynamic one-offs — with no "migrate dynamic previews to assets" regressions?
+- Are static browser/TGUI files registered as `/datum/asset` and returned from `ui_assets()`, then referenced via `resolveAsset()`, `get_url_mappings()`, or `SSassets.transport.get_asset_url()` instead of hardcoded `html/...` or `icons/...` paths that bypass `ASSET_TRANSPORT`? If CSS uses relative `url(...)`, is the asset namespaced?
 - For a crash inside a shared package (tgui-panel/tgui-say/common), was the site diffed against current /tg/ first, and is the fix an upstream backport rather than an invented local variant?
 - Is client-side persistence sized for its backend — small settings only on byondstorage (one disk json shared across every server under the hub entry, flushed ~10 s), append-forever data (chat logs) on the iframe+IndexedDB stack or not persisted at all — and does any backend migration import settings only, never foreign chat history (`references/client-storage.md`)?
 - Is any cache justified by *measured* cost? (Caching shared, immutable, same-for-everyone data globally is fine; caching per-user dynamic payloads keyed on a counter is not.)

@@ -44,6 +44,14 @@ Counts (proc definitions found): `try_update_ui` present in essentially every in
 
 Observed everywhere: components from a single import (`Box`, `Button`, `Section`, `Stack`, plus `Window` layout), `const { act, data } = useBackend<Data>()`, a TypeScript `type Data = {...}` contract using `BooleanLike` for DM booleans. Raw `<div>/<span>/<button>` is the rare exception (~6% of /tg/ interfaces), reserved for free-form content no component models well.
 
+## Browser asset delivery / CDN notes
+
+July 2026 pass over tgstation, Bubberstation, and BandaStation-Kagelite_DEV found the same browser-asset pattern in all three: `config/resources.txt` exposes the optional `ASSET_TRANSPORT webroot`, `ASSET_CDN_WEBROOT`, and `ASSET_CDN_URL` settings; `/datum/asset_transport/webroot` serves files through `SSassets.transport.get_asset_url()`; `/datum/asset/*/get_url_mappings()` serializes `asset/mappings`; and TGUI resolves those mappings through `resolveAsset()`. Static UI images, JSON catalogs, fonts, CSS, and spritesheets therefore go through `/datum/asset` plus `ui_assets()` instead of hardcoded browser paths.
+
+Bubberstation and BandaStation modular examples follow the same rule rather than inventing fork-local delivery: modular preference/language spritesheets, minesweeper assets, nanomap/navigator assets, and title-screen browser files all use the asset cache or `SSassets.transport.get_asset_url()`. The important negative example is also consistent: `browse_rsc()` remains in all three for generated/ephemeral images such as photos, admin/debug icons, and preview images. That is not a CDN gap; it is the right shape for data that is created per interaction or is not worth registering as a static asset.
+
+Twilight-Axis spot-check (July 2026, not part of the original corpus table) supports the same concept. It has asset transport config entries, `asset/mappings` handling in `tgui/packages/tgui/assets.ts`, and TGUI screens such as `ManorPanel` and `OriginPicker` register `/datum/asset/simple` datums in `modular_twilight_axis` while frontend code references those names with `resolveAsset()`. It also retains older direct browser/resource paths in non-TGUI browse popups, so treat it as partially modernized rather than evidence that every browser file should be routed through TGUI assets.
+
 ## Classification of findings
 
 ### Stable cross-repo principles (true in all sampled forks; safest defaults)

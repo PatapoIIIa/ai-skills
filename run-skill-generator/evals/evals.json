@@ -1,0 +1,23 @@
+{
+  "skill_name": "run-skill-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Нужно добавить модульную TGUI-панель торговца в C:\\Axis\\BandaStation-Kagelite_DEV так, чтобы она пережила следующий upstream sync. С чего начинаем и какие скиллы задействуем?",
+      "expected_output": "Engages both architecture skills with the documented interaction order (tgstation-modular-content decides placement in modular_bandastation, ss13-tgui decides implementation), hands repo->base resolution and the binding brief to semantic-controller.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Представь, что все папки ai_navigation_* удалены. Восстанови инфраструктуру для C:\\Axis\\Rivermist-Hollow-Vanderlin.",
+      "expected_output": "Does not panic-copy from memory of old bases; routes to semantic-controller bootstrap (assessment -> staged build from file-specs), rebuilds, validates, registers, redeploys — demonstrating the recovery property.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "В ss13-tgui написано одно, а в ai_navigation_azure/tgui_guide.md другое про то, как регистрируется интерфейс. Кому верить?",
+      "expected_output": "Applies the truth hierarchy: code first; base wins on fork-local facts, skill wins on framework invariants; routes the resolved fact to the correct layer (enrichment or base fix) via semantic-controller.",
+      "files": []
+    }
+  ]
+}

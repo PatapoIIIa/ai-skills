@@ -1,0 +1,7 @@
+interface:
+  display_name: "Run Skill Generator"
+  short_description: "Ecosystem controller: architecture skills + semantic controller"
+  default_prompt: "Use $run-skill-generator to route this task through the skill ecosystem: pick the architecture skill(s), apply their interaction contract, and hand base creation/binding/integrity to the semantic controller."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,23 @@
+{
+  "skill_name": "semantic-controller",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Собери семантическую базу ai_navigation для C:\\Axis\\CEV-Eris с нуля.",
+      "expected_output": "Runs Stage 0 assessment (family, subsystems, signals, overlay, tgui), builds only applicable files per file-specs.md in stage order, stamps generated inventories with date+command, validates with the script, registers the base in semantic-controller/SKILL.md, plans deployment as <repo>/ai_navigation.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Мне нужно добавить новую TGUI-панель настроек погоды в C:\\Axis\\Rivermist-Hollow-Vanderlin. Составь план.",
+      "expected_output": "Discovers the repo's base via the Discovery protocol (in-repo ai_navigation, then workspace registry), produces a binding brief (ss13-tgui invariants + fork-local facts with source files + verification greps), lets code win over any stale base fact it hits.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Проверь целостность всех трёх семантических баз и почини найденное.",
+      "expected_output": "Runs validate_semantic_base.py per base with correct --repo roots, distinguishes real drift from shorthand noise, fixes fast-tier files first, updates stamps, re-syncs deployed copies (diff -rq empty), updates parity notes in integrity.md.",
+      "files": []
+    }
+  ]
+}
