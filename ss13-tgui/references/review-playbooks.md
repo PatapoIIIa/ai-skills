@@ -100,6 +100,23 @@ Prioritize:
 
 Good outcome: many-option pickers have tiny data payloads, stable asset keys, and no dead thumbnail/cache path.
 
+Empty/blank preview triage (field-proven order — theorizing about icon pipelines loses to looking at pixels):
+
+1. **Do not trust silent runtime logs until the channel is proven live.** Grep the fork's historical
+   logs for ANY "runtime error" ever; some forks ship broken runtime logging, and "no errors" from a
+   dead channel proves nothing.
+2. **Isolate with a throwaway focused unit test** (`focus = TRUE`, compile `-DUNIT_TESTS`, run
+   `dd <game>.dmb -close -trusted`, read `data/unit_tests.json`): call the exact preview proc on an
+   allocated mob and `fcopy(flat, "data/probe_[tag].png")` so the actual pixels (content bbox) are
+   inspectable; TEST_FAIL strings work as printf. Compare naked vs geared vs forced-dir variants —
+   encoded LENGTH alone discriminates (a fully transparent PNG is ~100-300 base64 chars; a real
+   render is 500+; content growing while length shrinks means the flatten is losing pixels).
+3. **Known fingerprints:** renders naked / transparent while holding an item = the native
+   `getFlatIcon` canvas-expansion transposition (SKILL.md picker pitfalls); broken `<img>` showing
+   alt text = raw base64 missing its `data:image/png;base64,` prefix (`icon2base64` returns the bare
+   string); client "Invalid argument" popup with clean server logs = `RenderIcon` output fed into a
+   savefile-based helper (byond-client-api.md).
+
 ## BYOND control/devserver review
 
 Read `references/byond-ui-and-devserver.md`.

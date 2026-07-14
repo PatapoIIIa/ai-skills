@@ -44,3 +44,4 @@ Generated for Twilight-Axis on 2026-07-09. Primary Fast Start entrypoint.
 | unknown architecture/location | system_map.md or architecture.md |
 | modular layer and overlay rules | modular_guide.md |
 | deep inheritance | type_tree.md; search a specific path, never read whole file |
+| siege / world raid event (skeleton, goblin) | entrypoints.md -> Siege row; world_trait flag on SSmapping, not a subsystem |

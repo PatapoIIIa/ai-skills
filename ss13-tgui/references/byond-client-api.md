@@ -130,6 +130,16 @@ skin control I/O; `winclone(player, source_id, clone_id)` — clone skin control
   first. Preview hierarchy therefore reads: ByondUi map_view (live, zero encoding, planes work) >
   `RenderIcon` (client-exact single image, plane-master caveat above) > server `getFlatIcon`
   (no client needed) > hand-rolled flatteners (never).
+  **Delivery caveat (field-tested on a 516 fork):** the official doc's note "the returned icon is
+  a cache file, *not* an /icon datum" has teeth — savefile serialization rejects the value, so an
+  `icon2base64()` built on `WRITE_FILE(savefile[...], icon)` fails with a **client-side "Invalid
+  argument" dialog and ZERO server runtime** (symptom: popup on every UI open, runtime logs
+  clean), and wrapping the result in `icon(raw_render)` does NOT normalize it. Deliver via
+  `fcopy()` to a served file / asset transport — the pattern the only real-world consumers use
+  (painting canvases `fcopy` it straight to PNG) — never through savefile-based base64 helpers.
+  Related fork idiom: tg-family `icon2base64()` returns the RAW base64 string without the
+  `data:image/png;base64,` prefix — every caller wraps it manually; a "broken image with alt
+  text" in tgui is usually a missing prefix, not a bad icon.
 - **`client.MeasureText(text, style, width)` (513+)** — returns rendered `"WxH"` for maptext/CSS
   text; the correct way to size maptext popups instead of guessing character widths.
 - **`client.control_freak`** — server-set flags (`CONTROL_FREAK_ALL`, `_SKIN`, `_MACROS`) that lock

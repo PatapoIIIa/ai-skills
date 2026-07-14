@@ -38,6 +38,16 @@ Autoupdate is a per-UI flag (`var/autoupdate = TRUE`, toggled with `ui.set_autou
 
 If you disabled autoupdate, the whole update story should collapse to: "on change, call `SStgui.update_uis(src)`." No wrapper proc, no stored UI, no per-user bookkeeping unless a profile proves it is needed. Disabling autoupdate is a legitimate optimization (it stops the per-second re-render of an expensive payload) — but only if the manual path is complete.
 
+One refinement when the change site is a SIGNAL and the refresh is heavy (icon flatten, base64
+encode with savefile I/O): never run the regeneration inline in the handler. `SEND_SIGNAL` executes
+synchronously inside whatever call chain fired it (an equip chain, `update_icon()`), so the CPU +
+disk cost lands mid-action and races concurrent `ui_act` pushes — field symptom: "lags on redraw"
+plus transiently blank panels. `INVOKE_ASYNC` / `set waitfor = FALSE` do NOT fix this — they only
+release the *caller's* wait; a callee with no sleep still runs to completion on the same tick. Defer
+for real: the handler only schedules `addtimer(CALLBACK(src, PROC_REF(rebuild)), 0, TIMER_UNIQUE)` —
+next tick off the hot stack, `TIMER_UNIQUE` coalesces bursts (stripping five items = one rebuild),
+and the rebuild proc re-checks `LAZYLEN(open_uis)` so nothing is computed for closed UIs.
+
 ## The client→server topic budget (rate limiting)
 
 Every message the webview sends to the server — `act/*`, tgui-panel `ping`, the error relay (`type=log`), `setSharedState`, ByondUi `renderByondUi`/`unmountByondUi` — is a `client/Topic()` call, and tg-family forks rate-limit Topic in `client_procs.dm` via config `SECOND_TOPIC_LIMIT` / `MINUTE_TOPIC_LIMIT` (typical defaults 10/sec, 100/min). These are **fixed-window counters**: once the minute budget is burned, *every* topic from that client is dropped until the window rolls — not just the offending ones. Exemptions are narrow: clients with an admin holder, the `statbrowser` window, and any specially whitelisted handlers (e.g. a native-say datum). Field data: an actively-used live-preview menu (hover previews ~5-8/s while mousing a grid, held-key button autorepeat ~7/s, geometry reports, 3 embedded maps) legitimately exceeds both defaults.

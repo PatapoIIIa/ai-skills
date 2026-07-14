@@ -39,6 +39,7 @@ Last validated 2026-07-09. Generated from file/include counts and live paths.
 | Economy/trade | code/controllers/subsystem/rogue/economy, code/controllers/subsystem/rogue/merchant_trade.dm, modular_twilight_axis/code/modules/roguetown/roguemachine | SSeconomy, SSmerchant_trade, treasury/merchant subsystems |
 | Mapping/world | _maps, code/controllers/subsystem/mapping.dm, code/controllers/subsystem/dungeon_generator.dm, modular_twilight_axis/code/controllers/subsystem/automapper_subsystem.dm | SSmapping, SSdungeon_generator, SSautomapper |
 | Visuals/icons | icons, code/controllers/subsystem/overlays.dm, code/controllers/subsystem/vis_overlays.dm, code/__HELPERS/icons.dm | see subsystem_map.md |
+| Sieges (skeleton/goblin raids) | code/datums/world_traits/sieges.dm, code/modules/events/raids/skeleton.dm, code/modules/events/raids/goblin.dm, code/modules/events/omens/skellysiege.dm, code/modules/jobs/job_types/roguetown/other/siege_skeleton.dm | SSmapping.active_world_traits; no dedicated subsystem |
 
 
 ## Type Root Counts
