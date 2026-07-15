@@ -1,0 +1,4 @@
+interface:
+  display_name: "BYOND / SS13 Coding"
+  short_description: "Write, review, and optimize DM code for SS13 codebases"
+  default_prompt: "Use $byond-ss13-coding for this BYOND/DM/SS13 task: read the repo's local instructions and navigation layer first, identify the codebase family, locate real definitions of every touched type/proc/signal/subsystem, follow nearby modern implementations, pick the correct change layer, implement the minimal solution with correct lifecycle (Initialize/Destroy/qdel pairing, signal and timer cleanup), keep hot paths cheap (tick budget, allocations, caches), run the static review checklist, and report honestly which checks were not executed."
