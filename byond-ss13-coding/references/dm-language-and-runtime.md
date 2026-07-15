@@ -1,6 +1,6 @@
 # DM Language and BYOND Runtime
 
-Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Reference (byond.com/docs/ref; a local copy ships with every BYOND install — see source-index.md), **[tg]** = tgstation `.github/guides/`, **[dev]** = BYOND developer statement on Discord (heuristic grade — see source-index.md), **[heuristic]** = engineering inference, not documented. Anything untagged in this file is [DM Ref].
+Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Reference (byond.com/docs/ref; a local copy ships with every BYOND install — see source-index.md), **[tg]** = tgstation `.github/guides/`, **[dev]** = a statement by the BYOND engine's own developer on the official Discord (highest heuristic grade — see source-index.md for the sourcing method), **[community]** = a statement by another experienced Discord participant, corroborating but not authoritative on engine internals, **[heuristic]** = engineering inference, not documented. Anything untagged in this file is [DM Ref].
 
 ## Contents
 
@@ -29,6 +29,7 @@ Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Refer
 - `..()` calls the parent implementation with the same arguments by default; passing arguments explicitly replaces them. Root procs marked `SHOULD_CALL_PARENT(TRUE)` (a SpacemanDMM lint, present in all six profiled repos) must have their override chains call `..()` — usually because the root sends a signal.
 - Named arguments (`new /obj/thing(loc, is_red = TRUE)`) work on any call. tg style: name the Initialize argument after the var and assign with `src.var = var`. [tg STYLE]
 - Default argument values are evaluated per call. Argument lists are accessible via `args` (a real list).
+- Proc calls are dispatched **by name** through a per-type lookup table; call overhead is non-zero and the engine developer flags it as significant when a small proc is called very many times (e.g. sort comparators, per-item helpers in hot loops) [dev 2023-11-30, 2022-01-04]. Inlining or a macro is the escape hatch for proven hot cases — not a default style.
 - A proc that runtimes does not crash its caller: execution continues at the call site, and the failed proc returns whatever `.` held at the moment of the error. Use this deliberately (set `.` to a safe fallback early in procs where callers can continue) and defensively (never assume a callee "must have" finished). [tg STANDARDS]
 
 ## Return semantics and the dot variable
@@ -50,16 +51,18 @@ Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Refer
 - `list + list2` allocates a new list; `list += list2` (or `Add`) mutates in place. In hot code the difference is real allocation pressure. [tg STANDARDS]
 - **`for (var/x in mylist)` iterates over a copy of the list** — mutations during the loop don't affect the iteration (exception: looping `world` contents is not a copy). [DM Ref: for list] The `for (var/i in 1 to mylist.len)` form evaluates its bounds **once** at loop start; if the body changes the list length, the loop and the list disagree. [DM Ref]
 - A typed loop var carries a hidden `istype` filter: `for (var/obj/item/I in contents)` silently skips nulls and non-matches. Use `as anything` to skip the check when the list is homogeneous — faster, and surfaces stray nulls as runtimes instead of hiding them. [tg STANDARDS]
-- Associative lists are internally a hybrid of array + binary tree; the array part preserves insertion order. [dev 2023-12-17] Associative storage costs roughly 3× the memory of flat entries (tg cites 24 vs 8 bytes/entry) and lookup is a tree search, not O(1) hashing. [tg STANDARDS]
+- Associative lists are internally a hybrid of array + red-black tree; the array part preserves insertion order, and keyed lookup is an O(log n) tree search, not O(1) hashing. [dev 2023-12-17, 2024-01-31] Associative storage costs roughly 3× the memory of flat entries (tg cites 24 vs 8 bytes/entry). [tg STANDARDS]
 - Special engine lists (`contents`, `overlays`, `underlays`, `vis_contents`) are managed by the engine and do not support associative values; they also behave unusually when copied — treat them as views, not plain lists.
 - Declaring a list initializer in a var definition (`var/list/L = list()`) runs through a hidden per-object init proc and allocates even if never used; for rarely-used lists, allocate lazily (in `Initialize` or on first use — tg's `LAZYADD`/`LAZYINITLIST` helper family exists for exactly this). [tg STANDARDS]
 
 ## Type introspection
 
 - `istype(x, /path)` — true for the path and descendants; `istype(null, anything)` is false. `ispath()`, `isnull()`, `islist()` and friends are cheap built-ins.
+- `istype` itself is an **O(1) check** (the compiler/engine assigns depth-first IDs to the type tree at startup precisely so istype stays fast; the developer treats it as a hot-loop call) [dev 2024-05-18, 2026-07-07]. So the win from typecaches and `as anything` comes from removing *many* checks and the implicit filtering semantics, not because one istype is slow.
 - `typesof(/path)` returns the path and all subtypes; `subtypesof` excludes the root. Both allocate a fresh list per call — never call them in a loop; cache the result.
 - **Typecache pattern** (tg `typecacheof()` in `code/__HELPERS/_lists.dm`): build an associative list `type → TRUE` once, then test membership with `cache[x.type]` — O(log n) and no istype chain. Standard for "is this one of N types" checks in hot paths. [tg]
 - `locate(ref_string)` resolves a text reference to an object. **Security:** never `locate(ref)` from user/href input without constraining it to a known list (`locate(ref) in contents`) — an unconstrained locate is an exploit vector. [tg STANDARDS]
+- `locate()` cost gradient: by ref string or `tag` is fast (tag lookup is a small tree search); the slow forms are **type-path searches over the whole world or a very large list** [dev 2024-05-08, 2024-05-18]. Never `locate(/type) in world` in recurring code — keep a registry list.
 
 ## References and garbage collection
 
@@ -68,7 +71,7 @@ Verified against [DM Ref: garbage]:
 - GC is reference counting. When the count hits zero, the object is freed. **Circular references are never collected** — a pair of datums pointing at each other leaks until something breaks the cycle or hard-deletes.
 - Things that count as references: stored in a var; item in (or key of) a list; has a `tag`; on the map (always true for turfs); inside `contents`; inside `vis_contents`; a temporary value in a still-running proc (including a *sleeping* proc's `src`, args, and locals); a mob with a `key`; an image attached to an atom.
 - `world.contents` does **not** count as a reference. Turfs and areas are not GC'd at all. Mobs with a key and anything with a non-empty `tag` are effectively immortal until those are cleared.
-- `del obj` clears the obvious references first, then — if references remain — **searches all of memory** for the rest. That search is the "hard delete" cost, and it scales with world size (per the engine developer, scanning lists is roughly linear in the combined length of all lists in the game [dev 2023-11-15]). This is why every profiled codebase uses `qdel()` + `Destroy()` (clean your own references, let refcounting do the free) and treats hard deletes as bugs. See ss13-architecture.md → Lifecycle.
+- `del obj` clears the obvious references first, then — if references remain — **searches all of memory** for the rest. That search is the "hard delete" cost, and it scales with world size (per the engine developer, scanning lists is roughly linear in the combined length of all lists in the game [dev 2023-11-15]). The gradient: references sitting in running/sleeping procs are cleared cheaply up front; references buried in lists are what makes the full search expensive [dev 2023-12-14]. This is why every profiled codebase uses `qdel()` + `Destroy()` (clean your own references, let refcounting do the free) and treats hard deletes as bugs. See ss13-architecture.md → Lifecycle.
 - `\ref[x]` / weakref datums hold a non-counting reference; resolving may return null. Use for "cares about but doesn't own" relationships.
 
 ## sleep, spawn, waitfor — the async model
@@ -78,7 +81,7 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 - `sleep(0)` always yields, for as short a time as possible. `sleep(-1)` yields **only if** other scheduled events are backlogged — a cheap "be polite in a long computation" check (tg's `stoplag()`/`CHECK_TICK` build on this idea with tick-usage checks).
 - `spawn(Delay) block` schedules a *copy* of the current proc to run the block. `spawn(0)` runs it right after currently-pending events (same tick if budget allows — do **not** model it as "costs a full tick"). `spawn(-1)` runs the block immediately and defers the code *after* the spawn instead. Plain (non-object) locals and args are *copied* into the spawned block — mutations don't propagate; objects and lists are shared.
 - `set waitfor = 0` makes a proc return control to its caller at its first sleep, returning the current `.` value. This is how "fire and forget" procs are written without spawn. Modern default is `waitfor = 1`.
-- A sleeping proc keeps `src` and all its locals alive (GC references). If `src` is deleted (hard delete), its sleeping procs are killed. If some *other* object your proc references is deleted, your local var becomes a dangling reference to a qdel'd object or null — **always re-validate references after any sleep or `do_after`**: `if (QDELETED(target)) return`.
+- Mechanically: `sleep` parks the *entire call stack* in the scheduler and resumes it outside-in; `spawn` parks a *copy* of the current proc [dev 2023-11-12]. A sleeping proc keeps `src` and all its locals alive (GC references). If `src` is deleted (hard delete), the engine replaces the scheduled proc's src and the proc ends immediately on wake [dev 2026-02-19]. If some *other* object your proc references is deleted, your local var becomes a dangling reference to a qdel'd object or null — **always re-validate references after any sleep or `do_after`**: `if (QDELETED(target)) return`.
 - SS13 codebases forbid raw `sleep`/`spawn` in most contexts in favor of timers, callbacks, and processing subsystems — those are inspectable, cancellable, and budgeted. See ss13-architecture.md → Timers.
 
 ## The world tick

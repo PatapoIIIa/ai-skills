@@ -47,7 +47,7 @@ Example — "add a TGUI settings panel to a Vanderlin-family fork":
 
 ```text
 Task: new TGUI settings panel for X
-Repo: <workspace>/SomeVanderlinFork  Base: <repo>/ai_navigation  Skills: ss13-tgui, tgstation-modular-content
+Repo: <workspace>/SomeVanderlinFork  Base: <repo>/ai_navigation  Skills: byond-ss13-coding, ss13-tgui, tgstation-modular-content
 Invariants: entry via SStgui.try_update_ui; no stored datum/tgui refs; autoupdate off +
   push at change sites; ui_act params are hostile; new files live in the overlay layer.
 Local facts: entry proc is ui_interact (tgui_guide.md); component import path per

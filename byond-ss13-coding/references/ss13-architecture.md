@@ -51,7 +51,7 @@ Plain datums just use `New()`.
 
 ## qdel, Destroy, and hard deletes
 
-`qdel(x)` (SSgarbage, `code/controllers/subsystem/garbage.dm`) calls `Destroy()`, then queues the object; if references still exist after the grace period, the engine hard-deletes it — the memory-wide reference search described in dm-language-and-runtime.md → GC. Hard deletes are treated as bugs in every profiled repo that measures them (tg, BandaStation, Vanderlin ship `HARDDELETES.md`).
+`qdel(x)` (SSgarbage, `code/controllers/subsystem/garbage.dm`) calls `Destroy()`, then queues the object; if references still exist after the grace period, the engine hard-deletes it — the memory-wide reference search described in dm-language-and-runtime.md → GC. **`qdel`/`Destroy`/`SSgarbage` are entirely tgstation-authored conventions, not BYOND primitives** — BYOND itself only gives you `del()` and refcounting GC; the staged, tracked deletion pipeline is userspace code built on top (a wish for the engine to have this natively has been voiced even by experienced SS13 tooling developers [community 2026-01-14]). This matters when porting to non-tg-family code: don't assume `qdel` exists — check for it. Hard deletes are treated as bugs in every profiled repo that measures them (tg, BandaStation, Vanderlin ship `HARDDELETES.md`).
 
 Working rules (from tg HARDDELETES.md, generalizable):
 

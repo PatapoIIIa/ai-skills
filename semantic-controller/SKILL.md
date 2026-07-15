@@ -1,6 +1,6 @@
 ---
 name: "semantic-controller"
-description: "Discovers, creates, and maintains per-repository semantic bases (ai_navigation folders) for SS13/BYOND codebases, and binds architecture-knowledge skills (ss13-tgui, tgstation-modular-content) to a base for concrete tasks. Use whenever the user mentions семантическая база, семантика репозитория, ai_navigation, собрать/обновить/проверить базу, navigation layer, a new repo that needs mapping; before any non-trivial coding task in an SS13/BYOND fork (to route through the repo's base and produce a binding brief); and whenever a navigation doc contradicts the code. Works from zero: no pre-existing bases or registry required."
+description: "Discovers, creates, and maintains per-repository semantic bases (ai_navigation folders) for SS13/BYOND codebases, and binds architecture-knowledge skills (byond-ss13-coding, ss13-tgui, tgstation-modular-content) to a base for concrete tasks. Use whenever the user mentions семантическая база, семантика репозитория, ai_navigation, собрать/обновить/проверить базу, navigation layer, a new repo that needs mapping; before any non-trivial coding task in an SS13/BYOND fork (to route through the repo's base and produce a binding brief); and whenever a navigation doc contradicts the code. Works from zero: no pre-existing bases or registry required."
 ---
 
 # Semantic Controller

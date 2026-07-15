@@ -2,6 +2,8 @@
 
 Extracted from the BYOND/Dream Maker Designer's Guide. These are hard constraints of the Dream Daemon runtime — not project conventions.
 
+> Corrections 2026-07-15: three claims from the (dated) Designer's Guide were fixed after checking the official DM Reference — bitwise width, max view range, and `sleep(0)`/`spawn(0)` cost. See the `byond-ss13-coding` skill's `references/source-index.md` for the verification record.
+
 ## Tick System
 
 | Variable | Default | Notes |
@@ -9,7 +11,7 @@ Extracted from the BYOND/Dream Maker Designer's Guide. These are hard constraint
 | `world.tick_lag` | `1` (= 0.1 sec) | Smallest meaningful time unit. Decreasing it costs CPU; below a viable threshold the overhead makes the server *slower*, not faster. |
 | `world.cpu` | — | Percentage of tick budget consumed. **≥100 = server is in overtime; player input backlogs.** |
 | Client command rate | 1 cmd/tick | Clients are hard-limited to one command per tick. Increasing `tick_lag` reduces input flood at the cost of responsiveness. |
-| Minimum sleep/spawn | 1 tick | `sleep(0)` and `spawn(0)` still cost at least one tick. Use them to yield, not for zero-delay work. |
+| Minimum sleep/spawn | sub-tick | `sleep(0)` sleeps "as short a time as possible" (may resume the same tick); `spawn(0)` runs right after currently-pending events; `sleep(-1)` yields only if other events are backlogged. Use them to yield — the cost is a scheduler round-trip, not a guaranteed full tick. |
 
 **Rule of thumb:** `world.cpu` is the single best real-time health gauge. Values routinely above 80 are a warning; above 100 means the game is visibly lagging.
 
@@ -25,7 +27,7 @@ Extracted from the BYOND/Dream Maker Designer's Guide. These are hard constraint
 | Limit | Value |
 |---|---|
 | Default view range (`world.view`) | `5` → 11×11 viewport |
-| Maximum view range | `10` → 21×21 viewport |
+| Maximum view size | ~5000 tiles total (roughly 70×70; non-square views allowed) |
 | Map coordinates | `world.maxx`, `world.maxy`, `world.maxz` (default 0; any nonzero sets others to 1) |
 | `luminosity` range | `0–6` (areas only are luminous by default) |
 | `walk_to` / `step_to` effective range | **≤ `world.view * 2 + 1` tiles (default: 11).** Silent no-op if the target is farther — no error, no log entry, the mob simply does not move. |
@@ -36,7 +38,8 @@ Extracted from the BYOND/Dream Maker Designer's Guide. These are hard constraint
 
 | Limit | Value |
 |---|---|
-| Bitwise integer range | 0–65535 (16-bit unsigned). Values outside this range are **truncated silently**. |
+| Bitwise integer range | 0–16777215 (**24-bit**). Bits above bit 23 are **lost silently** — bit flags must fit in positions 0–23. |
+| Integer precision | Numbers are 32-bit floats: integers are exact only up to 16777216 (2^24); beyond that, increments silently lose precision. |
 | `world.time` / `world.realtime` | Measured in **tenths of seconds**. All `sleep`/`spawn` delays use the same unit. |
 
 ## Memory and Garbage Collection

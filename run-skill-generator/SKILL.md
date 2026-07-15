@@ -1,6 +1,6 @@
 ---
 name: "run-skill-generator"
-description: "Top-level controller for an SS13/BYOND skill ecosystem: defines how architecture-knowledge skills (ss13-tgui, tgstation-modular-content, and future ones) interact with each other, and when to hand off to the semantic-controller skill that discovers, creates, and maintains per-repository semantic bases (ai_navigation folders). Use at the start of any non-trivial task in an SS13/BYOND fork; whenever the user mentions семантика/семантический анализ репозитория, семантическая база, ai_navigation, navigation layer, восстановить инфраструктуру, новая кодовая база, skill ecosystem; whenever it is unclear which skill applies; and whenever two architecture skills could both apply and their interaction order matters."
+description: "Top-level controller for an SS13/BYOND skill ecosystem: defines how architecture-knowledge skills (byond-ss13-coding, ss13-tgui, tgstation-modular-content, and future ones) interact with each other, and when to hand off to the semantic-controller skill that discovers, creates, and maintains per-repository semantic bases (ai_navigation folders). Use at the start of any non-trivial task in an SS13/BYOND fork; whenever the user mentions семантика/семантический анализ репозитория, семантическая база, ai_navigation, navigation layer, восстановить инфраструктуру, новая кодовая база, skill ecosystem; whenever it is unclear which skill applies; and whenever two architecture skills could both apply and their interaction order matters."
 ---
 
 # Run Skill Generator — ecosystem controller
@@ -12,7 +12,7 @@ This bundle is self-sufficient: it assumes **nothing** about the machine it runs
 | # | Layer | Role | How to locate |
 |---|---|---|---|
 | 1 | **Controller** (this skill) | Interaction contract between architecture skills; hands base work to layer 3 | installed skill |
-| 2 | **Architecture skills** | The deepest, fork-invariant design patterns and anti-patterns | installed skills, referenced **by name**: `ss13-tgui`, `tgstation-modular-content` |
+| 2 | **Architecture skills** | The deepest, fork-invariant design patterns and anti-patterns | installed skills, referenced **by name**: `byond-ss13-coding`, `ss13-tgui`, `tgstation-modular-content` |
 | 3 | **Semantic controller** | Binds layer 2 to layer 4; discovers existing bases, **creates** them when absent, controls their integrity | installed skill: `semantic-controller` |
 | 4 | **Semantic bases** | Factual current state of one fork (`ai_navigation/` folders); regenerable data, never authoritative over code | discovered on disk by the semantic controller (see its Discovery protocol) — never hardcoded |
 
@@ -26,10 +26,13 @@ Each architecture skill has an activation guard — respect it; do not stretch a
 
 | Situation | Contract |
 |---|---|
+| General DM/SS13 coding: writing or reviewing DM code, systems (subsystems, components, signals, traits, timers), lifecycle/qdel bugs, runtimes, performance, porting between forks | `byond-ss13-coding` — the default architecture skill when no narrower guard matches |
 | Task is pure UI/webview (tgui files, ui_* procs, ByondUi, blank windows) | `ss13-tgui` alone |
 | Task is fork content that must survive upstream sync | `tgstation-modular-content` alone |
 | Modular tgui interface (both apply) | `tgstation-modular-content` decides **placement and file layout** (overlay dir, include wiring, edit markers); `ss13-tgui` decides **implementation** (lifecycle, data flow, components). Placement constraints outrank implementation convenience — a correct UI in the wrong layer is a merge conflict later |
-| Skills appear to disagree | They own different axes (mergeability vs framework correctness); a real clash means one is applied outside its guard — re-check the guards |
+| DM implementation on a tracking fork (`byond-ss13-coding` + `tgstation-modular-content`) | modular-content decides **placement**, byond-ss13-coding decides **DM implementation** (same axis split as with tgui) |
+| DM feature with a tgui surface (`byond-ss13-coding` + `ss13-tgui`) | byond-ss13-coding owns the DM side up to the data/action boundary (`ui_data` payload shape, `ui_act` security); ss13-tgui owns everything inside `tgui/` |
+| Skills appear to disagree | They own different axes (mergeability vs framework correctness vs engine semantics); a real clash means one is applied outside its guard — re-check the guards. On engine semantics (tier-1 facts), `byond-ss13-coding` is the reference |
 | Task reveals knowledge neither skill has | Route the fact to the right layer: invariant everywhere → the architecture skill (enrichment intake); true only in this fork → the semantic base, via the semantic controller |
 
 New architecture skills join this table with: name, domain guard, and interaction rules against the existing ones.
