@@ -1,7 +1,0 @@
-interface:
-  display_name: "Twilight-Axis AI Navigation"
-  short_description: "Route Twilight-Axis systems and signals"
-  default_prompt: "Use $twilight-axis-ai-navigation to route this Twilight-Axis task through current paths, overlays, subsystem maps, and signal maps; bind with $ss13-tgui for TGUI/browser UI work."
-
-policy:
-  allow_implicit_invocation: true
