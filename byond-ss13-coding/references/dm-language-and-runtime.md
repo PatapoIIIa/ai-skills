@@ -15,6 +15,7 @@ Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Refer
 - [The world tick](#the-world-tick)
 - [Preprocessor and compile-time](#preprocessor-and-compile-time)
 - [Built-in movement and spatial procs](#built-in-movement-and-spatial-procs)
+- [animate() and visual timing](#animate-and-visual-timing)
 - [Common runtime errors and defenses](#common-runtime-errors-and-defenses)
 
 ## Types and inheritance
@@ -87,7 +88,7 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 ## The world tick
 
 - `world.tick_lag` (deciseconds per tick) / `world.fps` set simulation rate. `world.cpu` = % of tick budget spent; sustained ≥100 means the server cannot finish a tick on time and timed events slip. `world.map_cpu` isolates the SendMaps share. [DM Ref: world vars]
-- Tick order in practice (from tg's `TICK_ORDER.md`, [tg]): sleeping procs resume (the Master Controller wakes here, deliberately last among sleepers) → control passes to BYOND internals → **SendMaps** computes and sends per-client view updates (cost scales with clients and with icons in view [dev 2023-12-14]) → **client verbs execute at the very end of the tick**. Consequence: expensive verbs are the most likely code to overrun the tick — keep verbs thin and defer real work to a subsystem.
+- Tick order in practice (from tg's `TICK_ORDER.md`, [tg]): sleeping procs resume (the Master Controller wakes here, deliberately last among sleepers) → control passes to BYOND internals → **SendMaps** computes and sends per-client view updates (cost scales with clients and with icons in view [dev 2023-12-14]) → **client verbs execute at the very end of the tick**. Consequence: expensive verbs are the most likely code to overrun the tick — keep verbs thin and defer real work to a subsystem. The same thin-enqueuer discipline applies to `Topic()` handlers: an SS13 contributor tracing glide stutter found incoming verb/Topic calls execute immediately at their processing point rather than waiting politely, so a heavy handler stutters everything else — validate, enqueue, return. [community 2026-06-21]
 - `world.tick_usage` reads the % of the current tick consumed so far — the primitive under all tick-budget macros (`TICK_CHECK`, `CHECK_TICK`, `MC_TICK_CHECK`).
 - An infinite loop that never sleeps gets aborted by the engine's runaway detection. It is a crash guard, not a scheduling tool.
 
@@ -105,6 +106,12 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 - `walk_to`/`step_to` **silently do nothing if the target is farther than 2× `world.view` steps** [DM Ref: walk_to] — a classic "mob just stands there" bug.
 - The `walk_*()` family runs in an engine-internal loop outside any subsystem's control; MC-based codebases ban it and provide a movement manager (tg: `SSmove_manager`/`GLOB.move_manager`; check the local equivalent). Also, an atom in a walk queue is retained by it until `walk(x, 0)`. [tg STANDARDS, DM Ref]
 
+## animate() and visual timing
+
+- **The server-side appearance change from `animate()` is instant.** The animation itself is a set of interpolation instructions sent to the client; the atom's actual appearance is already the final state of the last `animate()` call. Server code reading appearance vars mid-"animation" sees the end state, not the interpolated one. [dev 2024-04-01]
+- **Don't sleep between chained `animate()` steps.** A superseding animation started after a sleep begins from whatever the appearance happens to be then, which is inconsistent with setting up the full chain at once — build multi-stage animations as one `animate(...)` + `animate(...)` chain in a single execution. [dev 2025-04-21]
+- `animate()` is for visual interpolation, not gameplay position: a projectile's real trajectory should be stepped tick by tick; use animate only for cosmetics like spin. [dev 2025-04-21]
+
 ## Common runtime errors and defenses
 
 | Runtime | Typical cause | Defense |
@@ -117,3 +124,5 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 | Input/verb exploit | State validated before a prompt, not after | Re-check state and location *after* `input`/`alert`/`tgui_input` returns [tg STANDARDS] |
 
 When a bug makes no sense, check the runtime log (`world.log`) before theorizing: DM's continue-past-errors model means the visible failure is often two procs downstream of the actual runtime.
+
+On BYOND 515+ you can also walk the live call chain from inside a proc via the `caller` var and `/callee` type — `for (var/callee/frame = caller, frame, frame = frame.caller)` exposes each frame's `src`, `usr`, `file`, and `line` [dev 2024-10/2024-05, 516 era]. Invaluable for "who actually called this" debugging without instrumenting every call site; check the installed BYOND version supports it before relying on it.

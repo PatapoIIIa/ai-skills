@@ -23,13 +23,13 @@ Working inside an existing project: **local instructions and surrounding code > 
 
 ## Ecosystem: who does what
 
-This skill is an architecture-layer skill in the SS13 skill ecosystem (see the `run-skill-generator` skill for the layer contract). Respect the guards:
+This skill is an architecture-layer skill in the SS13 skill ecosystem (see the `byond-codemaster-controller` skill for the dispatch and layer contract). Respect the guards:
 
 | Situation | Handoff |
 |---|---|
 | Task touches tgui files, `ui_interact`/`ui_data`/`ui_act`, ByondUi, blank windows, browser assets | Open **ss13-tgui**; this skill keeps only the DM-side data/action boundary |
 | Change must survive upstream re-sync on a /tg/-tracking fork (modular roots, `master_files`, edit tags) | **tgstation-modular-content** decides placement and file layout; this skill decides implementation |
-| Repo needs a semantic base discovered, verified, or bootstrapped (`ai_navigation/` folders) | **semantic-controller** owns base lifecycle and produces the binding brief |
+| Repo needs a semantic base discovered, verified, or bootstrapped (`ai_navigation/` folders) | **byond-codemaster-controller** owns base lifecycle and produces the binding brief |
 | Pure DM/SS13 coding, review, optimization, debugging | This skill alone |
 
 Truth hierarchy across layers: **repo code > semantic base (fork facts) > this skill's fork-specific claims** — but this skill wins on engine invariants and anti-patterns. A base recommending an anti-pattern is a broken base; report it.
@@ -40,7 +40,7 @@ Follow this order for any implementation, fix, refactor, port, or review task.
 
 1. **Read local instructions first.** Repo root `AGENTS.md`/`CLAUDE.md`, `.github/guides/` (STANDARDS, STYLE, HARDDELETES if present), `CONTRIBUTING.md`, `.editorconfig`, lint configs (`SpacemanDMM.toml`, pragma files). They outrank everything in this skill except engine semantics.
 2. **Identify the codebase family.** Fingerprint it (project `.dme` name, modular roots, defines layout, signal penetration) — see [references/repository-profiles.md](references/repository-profiles.md). Don't assume tg idioms exist until you've seen them.
-3. **Use the navigation layer if one exists.** In-repo `ai_navigation/router.md`, or a workspace base found via the `semantic-controller` discovery protocol. Route through it instead of scanning the repo; verify its load-bearing facts against code before trusting identifiers.
+3. **Use the navigation layer if one exists.** In-repo `ai_navigation/router.md`, or a workspace base found via the `byond-codemaster-controller` discovery protocol. Route through it instead of scanning the repo; verify its load-bearing facts against code before trusting identifiers.
 4. **Locate real definitions** of every type, proc, signal, component, trait, and subsystem you will touch (`grep` for the definition, not the usage). Read the parent chain of any proc you override.
 5. **Study the 2–3 nearest modern implementations** of similar behavior. Prefer recently touched examples (`git log -1 -- <file>`) — old files are fossils of dead conventions, and every large SS13 repo contains plenty.
 6. **Choose the change layer**: upstream file, modular overlay, override, or project-specific. On a fork that tracks upstream, this decision belongs to `tgstation-modular-content` — placement constraints outrank implementation convenience.

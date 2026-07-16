@@ -1,5 +1,7 @@
 # Coding Standards
 
+Universal DM/tg conventions (style, lifecycle, signals, GC, review checklist) live in the **byond-ss13-coding** skill; below are Twilight-local facts only.
+
 - Code wins over this guide.
 - Prefer `modular_twilight_axis/**` for Twilight-local changes.
 - Destroy/qdel: unregister signals, stop processing, clear refs, then call parent as local pattern requires.

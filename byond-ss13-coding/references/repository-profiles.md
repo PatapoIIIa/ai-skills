@@ -63,13 +63,15 @@ All six profiled repos share the tg lifecycle skeleton: `/atom/proc/Initialize(m
 - **Family**: Stonekeep/RogueTown lineage (medieval-fantasy total conversion; Azure-Peak heritage), still merging its upstream. `roguetown.dme`.
 - **Layer decay (critical)**: three modular generations coexist (`modular/`, `modular_deserttown/`, `modular_twilight_axis/`) while most recent commits edit `code/` directly; legacy edit tags from dead lineages (`AZURE EDIT`, `CIT CHANGE`, …) are fossils. Do your own work modularly in the *active* root, but verify per `git log` and flag the decayed convention to the user rather than presenting any folder as law. (Full case study: tgstation-modular-content → references/fork-comparison.md.)
 - **Toolkit**: tg skeleton present, moderate signal usage (~305 files); pre-`seconds_per_tick` era; no `SpacemanDMM.toml` at root — lint expectations are weaker; total-conversion content (no space-station assumptions — combat, stats, and interaction models are bespoke; read the local system before porting tg gameplay logic).
-- **Navigation**: a workspace semantic base exists for this repo (discovered via semantic-controller; base folder `ai_navigation_twilight` at the workspace level).
+- **Known lineage cost centers** (reported by an experienced host of this lineage — verify locally before optimizing [community 2025-12]): the weather/outdoor-lighting system scans every tile of every z-level bottom-to-top with smoothing passes; and NPCs are full `/mob/living/carbon/human` instances running the complete player `Life()` chain plus A* pathfinding — rounds can accumulate 900+ such mobs, making mob population the dominant load. Both are prime profiling targets on any Stonekeep/RogueTown descendant.
+- **Navigation**: a workspace semantic base exists for this repo (discovered via the `byond-codemaster-controller` protocol; base folder `ai_navigation_twilight` at the workspace level).
 
 ## Vanderlin
 
 - **Family**: tg-like Stonekeep/RogueTown descendant — same medieval domain as Twilight-Axis but far closer to modern tg engineering. `vanderlin.dme`.
 - **Layers**: single modular root `modular_abel/` with the **aggregator include** pattern (one `.dme` line → `_module.dm` → per-feature `_xxx.dm`); new files register in the relevant aggregator, not the `.dme`.
 - **Toolkit**: strong tg discipline: ships `HARDDELETES.md`, `SpacemanDMM.toml`, biome/bun tgui toolchain, OPENDREAM-gated pragmas; heavy signal usage (~540 files). tg tier-3 mostly applies; placement per tgstation-modular-content.
+- Shares the Stonekeep lineage — check whether the weather/lighting full-map scans and full-carbon-NPC population issues flagged under Twilight-Axis apply here too before assuming performance headroom.
 - **Navigation**: workspace semantic base `ai_navigation_vanders_river` (note its `engine_limits.md` carries known outdated engine claims — see source-index.md → Corrections).
 
 ## Style dialects summary

@@ -106,6 +106,7 @@ Boolean facts with provenance — `ADD_TRAIT(target, TRAIT_X, SOURCE)`, `REMOVE_
 - tg-family: `GLOB.x` (managed global lists/vars via `GLOBAL_LIST_EMPTY(...)` etc.); older forks may use `global.x` or bare globals. Grep the local pattern.
 - Global managers (station data, lookups) are usually `SS_NO_FIRE` subsystems or GLOB datums — prefer extending the existing manager over adding a new global.
 - Anything added to a global list at creation must be removed in `Destroy()` — top hard-delete cause.
+- **Persistence**: modern tg-family code saves data as JSON, usually through rustg file/JSON procs (async-friendly), rather than BYOND's built-in savefile system — SS13 largely abandoned savefiles years ago [community 2025-12-11]. Older forks may still use `.sav` savefiles (client prefs especially); check what the local prefs/persistence code actually uses before extending it.
 
 ## Initialization order
 

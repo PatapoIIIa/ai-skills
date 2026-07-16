@@ -1,0 +1,7 @@
+interface:
+  display_name: "BYOND Codemaster Controller"
+  short_description: "Skill-over-skills: dispatch architecture skills + own semantic bases"
+  default_prompt: "Use $byond-codemaster-controller to route this SS13/BYOND task: pick the architecture skill(s) per the dispatch table, apply their interaction contract, resolve the repo to its semantic base (or bootstrap one from zero via file-specs), produce a binding brief, and run integrity validation on the base."
+
+policy:
+  allow_implicit_invocation: true

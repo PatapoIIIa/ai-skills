@@ -1,5 +1,7 @@
 # Engine Limits
 
+Verified universal engine facts live in the **byond-ss13-coding** skill (`references/dm-language-and-runtime.md`); below are the working reminders for this repo.
+
 - BYOND tick budget is finite; long loops need `CHECK_TICK` or an existing batching pattern.
 - Do not block subsystem `fire()`/`process()` paths with sleeps, prompts, browse calls, or synchronous icon generation.
 - References can go stale after sleeps/do_after; revalidate critical refs and state.
