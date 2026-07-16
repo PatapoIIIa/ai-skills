@@ -36,13 +36,15 @@ Each architecture skill has an activation guard — respect it; do not stretch a
 | Skills appear to disagree | They own different axes (mergeability vs framework correctness vs engine semantics); a real clash means one is applied outside its guard — re-check the guards |
 | Task reveals knowledge neither skill has | Route the fact to the right layer: invariant everywhere → the architecture skill (enrichment intake); true only in this fork → the semantic base (§Feedback loop in `references/binding.md`) |
 
+Rows compose: a task hitting three axes at once (e.g. a modular DM mechanic with a tgui surface) applies each relevant pairwise row simultaneously — placement decisions outrank DM implementation, which owns everything up to the `ui_data`/`ui_act` boundary, past which UI implementation rules. No special 3-way contract is needed.
+
 New architecture skills join this table with: name, domain guard, and interaction rules against the existing ones.
 
 ## Discovery protocol (run this first, every time)
 
 Given the repo (or directory) the task points at:
 
-1. **In-repo base:** does `<repo>/ai_navigation/` exist with an `AGENTS.md` or `router.md` inside? → that is the repo's base. Primary convention: a base lives inside its repo, because base docs self-reference as `ai_navigation/...`.
+1. **In-repo base:** does `<repo>/ai_navigation/` exist with an `AGENTS.md` or `router.md` inside? → that is the repo's base. **Check with a direct filesystem probe (`ls`/`dir`), not a search tool:** in-repo bases and fork overlays are often gitignored, and gitignore-respecting glob/grep tooling silently reports them absent (verified failure mode, 2026-07-16). Primary convention: a base lives inside its repo, because base docs self-reference as `ai_navigation/...`.
 2. **Workspace registry:** search upward from the repo (and the working directory) for `ai_navigation_registry.md`. If found, resolve the repo through its table — it may map the repo to a base stored elsewhere (legacy/standalone layouts).
 3. **Sibling bases:** if still nothing, glob for `ai_navigation*` directories next to the repo and in the parent workspace; match by the repo facts stated in each base's `AGENTS.md`/`SKILL.md` (project file name, overlay dir) — never by folder name alone.
 4. **Nothing found:** the repo has no base. Proceed from source; offer to bootstrap (`references/bootstrap.md`). Never block the user's task on base creation.
@@ -74,7 +76,7 @@ One repo — one base. Registry rows use paths *relative to the workspace root* 
 
 ## Architecture skills this controller binds
 
-Referenced by name; interaction order is the Skill dispatch table above. If one is not installed, say so and continue without it.
+Referenced by name; interaction order is the Skill dispatch table above. If one is not installed, say so and continue without it. The base-file lists below are **candidates, not a mandatory load-out**: when the base has a `router.md`, follow its task-conditional dispatch ("pick one helper") and open further candidates only when a concrete need fires — a 2026-07-16 dry run confirmed router-first loading is strictly cheaper with no loss.
 
 | Skill | Invariants for | Bind with these base files |
 |---|---|---|
