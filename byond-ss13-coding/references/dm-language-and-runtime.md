@@ -102,7 +102,7 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 ## Built-in movement and spatial procs
 
 - `view()`/`range()`/`oview()` are VM-optimized built-ins — cheaper than hand-rolled coordinate sweeps of the same area. Prefer them for spatial queries. [heuristic, consistent across tg guidance; profile when it matters]
-- Max view size is about 5000 tiles (~70×70). [DM Ref: view — corrects older material claiming a hard max of 10]
+- Max view size is about 5000 tiles (~70×70). [DM Ref: client.view var — corrects older material claiming a hard max of 10]
 - `walk_to`/`step_to` **silently do nothing if the target is farther than 2× `world.view` steps** [DM Ref: walk_to] — a classic "mob just stands there" bug.
 - The `walk_*()` family runs in an engine-internal loop outside any subsystem's control; MC-based codebases ban it and provide a movement manager (tg: `SSmove_manager`/`GLOB.move_manager`; check the local equivalent). Also, an atom in a walk queue is retained by it until `walk(x, 0)`. [tg STANDARDS, DM Ref]
 
