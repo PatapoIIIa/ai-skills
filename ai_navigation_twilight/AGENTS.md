@@ -16,7 +16,7 @@ Treat this navigation layer as a routing aid. Code in `C:/Axis/Twilight-Axis` is
 | ordinary task with known keyword, type path, or symptom | Fast Start | router.md |
 | broad, risky, multi-system, or explicitly human-guided | Guided Start | this file -> router.md |
 | refresh or migration of this navigation layer | Maintenance Start | update_policy.md |
-| TGUI/web UI/browser asset task | Bound Start | tgui_guide.md + $ss13-tgui |
+| TGUI/web UI/browser asset task | Bound Start | `$ss13-tgui` directly; local owners/paths are in system_map.md/subsystem_map.md |
 
 
 ## Guided Bootstrap

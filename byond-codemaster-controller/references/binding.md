@@ -6,7 +6,7 @@ An architecture skill without a base produces code that does not compile here (w
 
 ## Binding algorithm
 
-1. **Classify the task domain.** General DM/SS13 coding → `byond-ss13-coding` (the default). TGUI/web UI → `ss13-tgui`. Fork content that must stay mergeable → `tgstation-modular-content`. Several can apply — their interaction order is the Skill dispatch table in this skill's SKILL.md. If no architecture skill covers the domain, work from the base alone; do not stretch a skill past its activation guard.
+1. **Classify the task domain.** General DM/SS13 coding → `byond-ss13-coding` (the default). TGUI/web UI → `ss13-tgui`. Fork content that must stay mergeable → `tgstation-modular-content`. Several can apply — their interaction order is the Skill dispatch gates in this skill's SKILL.md. If no architecture skill covers the domain, work from the base alone; do not stretch a skill past its activation guard.
 2. **Resolve repo → base** via the Discovery protocol in `SKILL.md` (in-repo `ai_navigation/` → workspace registry → sibling glob). No base → work from source, offer bootstrap afterwards.
 3. **Pull invariants** from the architecture skill: contracts that hold everywhere (e.g. "`ui_act` returning truthy already triggers `SStgui.update_uis`", "modular code never edits upstream files in place"). These you will not re-derive or violate.
 4. **Pull local facts** from the base: entry proc names, import paths, overlay directory, include order, which signals/subsystems exist, local policies (e.g. Azure's TGUI localization pipeline is a base-level requirement no cross-fork skill knows).

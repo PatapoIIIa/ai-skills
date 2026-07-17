@@ -51,16 +51,25 @@ Follow this order for any implementation, fix, refactor, port, or review task.
 
 ## Reference dispatch
 
-Load only what the task needs — do not read all references for every task.
+Start from exactly **one anchor**, picked by the task's primary shape. Add a conditional file only when the task actually shows the specific trigger below — evidenced by the diff or the question, not "might be relevant." Don't load a file "to be safe"; a task that genuinely spans domains will earn its extra files one trigger at a time, not by defaulting to all six.
 
-| Task | Read |
+**Anchor — pick one:**
+
+| Task's primary shape | Anchor |
 |---|---|
-| Any DM code you write or judge — language semantics, lists, refs, sleep/spawn, GC, tick model | [references/dm-language-and-runtime.md](references/dm-language-and-runtime.md) |
-| Subsystems, components, elements, signals, traits, actions, timers, init order, Destroy/qdel design | [references/ss13-architecture.md](references/ss13-architecture.md) |
-| "Optimize this", hot paths, tick budget, allocations, caches, appearance/overlay cost | [references/performance.md](references/performance.md) |
-| Style questions, code review, security checks, the self-check checklist, user-runnable verification | [references/style-and-review.md](references/style-and-review.md) |
+| Writing, fixing, refactoring, or porting DM code; reviewing a patch | [references/style-and-review.md](references/style-and-review.md) — the self-check checklist is the spine of any code task |
+| "Optimize this", hot path, tick budget complaint, server lag | [references/performance.md](references/performance.md) |
 | Which fork is this / porting between forks / what's allowed here | [references/repository-profiles.md](references/repository-profiles.md) |
-| Where a claim comes from, verification status, how to consult the BYOND ref or Discord logs | [references/source-index.md](references/source-index.md) |
+| Fact-checking a claim, verification status, where a rule comes from | [references/source-index.md](references/source-index.md) |
+
+**Conditional add-ons — open only when this specific trigger fires in the task:**
+
+| Trigger actually present in the diff/question | Add |
+|---|---|
+| Touches `sleep`/`spawn`/timers/GC/list semantics/type-checks/tick internals | [references/dm-language-and-runtime.md](references/dm-language-and-runtime.md) |
+| Touches components/elements/signals/traits/subsystems/lifecycle (`Initialize`/`Destroy`/`qdel`) | [references/ss13-architecture.md](references/ss13-architecture.md) |
+
+A task can legitimately trigger both add-ons on top of its anchor (e.g. a review touching signal-driven lifecycle code with sleeps in it) — that's real domain overlap, not over-loading. The point of the split is that a plain style question or a simple port doesn't reflexively pull in language-runtime or architecture detail it never touches.
 
 ## Always-on invariants
 

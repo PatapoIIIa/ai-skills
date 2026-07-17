@@ -8,4 +8,4 @@
 | Status effect | Timed mob state | status effect dirs |
 | Signal listener | React to existing events | signal_map.md, register/unregister cleanly |
 | Subsystem | Global scheduler/state owner | high risk; use only for real global ownership |
-| TGUI interface | Player/admin browser UI | tgui_guide.md + $ss13-tgui |
+| TGUI interface | Player/admin browser UI | $ss13-tgui |

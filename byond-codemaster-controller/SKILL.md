@@ -21,24 +21,26 @@ If a referenced skill is not installed, degrade gracefully: state which skill is
 
 Semantic bases are **cattle, not pets**: every base file has a spec and a generation method (`references/file-specs.md`), so any base can be rebuilt from its codebase alone. This skill carries **no machine state**: which repos exist and where their bases live is data, discovered on disk or read from the workspace registry.
 
-## Skill dispatch — when and which skill to invoke
+## Skill dispatch — two independent gates, composed
 
-Each architecture skill has an activation guard — respect it; do not stretch a skill past its domain.
+Don't scan a table of prose conditions looking for the "best fit" — that's how a task ends up over-triggering two overlapping rows at once. Walk two small gates instead; each node is one crisp, checkable question, evaluated in order, first match wins. The final skill set is whatever Gate 1 returns, optionally prefixed by Gate 2.
 
-| Situation | Contract |
-|---|---|
-| General DM/SS13 coding: writing or reviewing DM code, systems (subsystems, components, signals, traits, timers), lifecycle/qdel bugs, runtimes, performance, porting between forks | `byond-ss13-coding` — the default architecture skill when no narrower guard matches |
-| Task is pure UI/webview (tgui files, ui_* procs, ByondUi, blank windows) | `ss13-tgui` alone |
-| Task is fork content that must survive upstream sync | `tgstation-modular-content` alone |
-| Modular tgui interface (both apply) | `tgstation-modular-content` decides **placement and file layout** (overlay dir, include wiring, edit markers); `ss13-tgui` decides **implementation** (lifecycle, data flow, components). Placement constraints outrank implementation convenience — a correct UI in the wrong layer is a merge conflict later |
-| DM implementation on a tracking fork (`byond-ss13-coding` + `tgstation-modular-content`) | modular-content decides **placement**, byond-ss13-coding decides **DM implementation** (same axis split as with tgui) |
-| DM feature with a tgui surface (`byond-ss13-coding` + `ss13-tgui`) | byond-ss13-coding owns the DM side up to the data/action boundary (`ui_data` payload shape, `ui_act` security); ss13-tgui owns everything inside `tgui/` |
-| Skills appear to disagree | They own different axes (mergeability vs framework correctness vs engine semantics); a real clash means one is applied outside its guard — re-check the guards |
-| Task reveals knowledge neither skill has | Route the fact to the right layer: invariant everywhere → the architecture skill (enrichment intake); true only in this fork → the semantic base (§Feedback loop in `references/binding.md`) |
+**Gate 1 — which skill(s) implement the work?**
 
-Rows compose: a task hitting three axes at once (e.g. a modular DM mechanic with a tgui surface) applies each relevant pairwise row simultaneously — placement decisions outrank DM implementation, which owns everything up to the `ui_data`/`ui_act` boundary, past which UI implementation rules. No special 3-way contract is needed.
+0. Is the ask purely "where should this go" / mergeability, with no code to write yet? → `tgstation-modular-content` alone. **STOP** (skip Gate 2 — already resolved).
+1. Is this a semantic-base task (create/discover/verify/refresh `ai_navigation/`), or "which skill(s) apply to my task"? → this skill handles it directly, via the Discovery protocol below. **STOP** (skip Gate 2).
+2. Does the task touch `tgui/` files, `ui_interact`/`tgui_interact`/`ui_data`/`ui_act`, `ByondUi`, or a blank/white-window symptom, with **no** DM-side systems work (subsystems, components, signals, lifecycle) in the same change? → `ss13-tgui` alone implements. → go to Gate 2.
+3. Does the task touch **both** `tgui/` work and DM-side systems work in the same change? → `byond-ss13-coding` implements the DM side up to the `ui_data`/`ui_act` boundary; `ss13-tgui` implements everything inside `tgui/`. → go to Gate 2.
+4. Default — everything else (DM coding, review, performance, debugging, porting between forks): `byond-ss13-coding` implements alone. → go to Gate 2.
 
-New architecture skills join this table with: name, domain guard, and interaction rules against the existing ones.
+**Gate 2 — does placement need a mergeability decision?** (only asked if Gate 1 didn't already STOP)
+
+5. Does the fork track upstream (a `modular_*`/`master_files` convention, or the base/`AGENTS.md` says so) **and** does this specific change need a genuinely new placement (a new file/interface/override), not an edit to something already sitting in its correct modular home? → prepend `tgstation-modular-content`: it decides placement and file layout **first**; whatever Gate 1 selected implements the content inside that placement.
+   Otherwise → Gate 1's answer stands unchanged.
+
+**If the guards still disagree after both gates** — a real clash means one skill was stretched outside its own guard; re-check the guards rather than picking by feel. **If the task exposes knowledge neither skill has** — route the fact to the right layer: invariant everywhere → the architecture skill (enrichment intake); true only in this fork → the semantic base (§Feedback loop in `references/binding.md`).
+
+New architecture skills join Gate 1 as a new numbered node, in front of the default (node 4) — state its domain guard and where it sits relative to the existing nodes.
 
 ## Discovery protocol (run this first, every time)
 
@@ -76,7 +78,7 @@ One repo — one base. Registry rows use paths *relative to the workspace root* 
 
 ## Architecture skills this controller binds
 
-Referenced by name; interaction order is the Skill dispatch table above. If one is not installed, say so and continue without it. The base-file lists below are **candidates, not a mandatory load-out**: when the base has a `router.md`, follow its task-conditional dispatch ("pick one helper") and open further candidates only when a concrete need fires — a 2026-07-16 dry run confirmed router-first loading is strictly cheaper with no loss.
+Referenced by name; interaction order is the Skill dispatch gates above. If one is not installed, say so and continue without it. The base-file lists below are **candidates, not a mandatory load-out**: when the base has a `router.md`, follow its task-conditional dispatch ("pick one helper") and open further candidates only when a concrete need fires — a 2026-07-16 dry run confirmed router-first loading is strictly cheaper with no loss.
 
 | Skill | Invariants for | Bind with these base files |
 |---|---|---|
@@ -88,8 +90,8 @@ Referenced by name; interaction order is the Skill dispatch table above. If one 
 
 | Situation | Do |
 |---|---|
-| Coding task, discovery found a base | Bind: base `router.md` → one helper; pick the architecture skill(s) per the dispatch table; produce a binding brief per `references/binding.md` |
-| Coding task, no base | Do the task from source (still applying the dispatch table); offer to bootstrap afterwards |
+| Coding task, discovery found a base | Bind: base `router.md` → one helper; pick the architecture skill(s) per the dispatch gates; produce a binding brief per `references/binding.md` |
+| Coding task, no base | Do the task from source (still applying the dispatch gates); offer to bootstrap afterwards |
 | New codebase should get a base | `references/bootstrap.md` (assessment → staged build), with `references/file-specs.md` as the per-file DNA |
 | Base is stale / suspect / just refreshed | `references/integrity.md`: run `scripts/validate_semantic_base.py`, refresh by drift tier, re-stamp, update registry |
 | Base contradicts code | Code wins. Navigation Miss Protocol: a missing/thin base entry never proves absence — grep the source, use what you find, then fix the base entry |

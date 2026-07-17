@@ -15,7 +15,7 @@ Before you touch any file under `code/`, `_maps/` (upstream maps), `icons/`, `so
 
 ## Activation guard
 
-Use this skill when the work adds or changes gameplay content on a fork that tracks upstream /tg/ and the change must stay mergeable. If the task is a PR *into* upstream /tg/station, the modular rules are inverted — don't apply them. If it is pure tgui framework work, defer to the `ss13-tgui` skill; for the DM implementation itself defer to `byond-ss13-coding` — this skill decides *placement*, that one decides *code* (order and pairings: the `byond-codemaster-controller` dispatch table). When unsure, check for a `modular_*` / `master_files` directory and an upstream-edit comment convention; their presence means this skill applies.
+Use this skill when the work adds or changes gameplay content on a fork that tracks upstream /tg/ and the change must stay mergeable. If the task is a PR *into* upstream /tg/station, the modular rules are inverted — don't apply them. If it is pure tgui framework work, defer to the `ss13-tgui` skill; for the DM implementation itself defer to `byond-ss13-coding` — this skill decides *placement*, that one decides *code* (order and pairings: the `byond-codemaster-controller` dispatch gates). When unsure, check for a `modular_*` / `master_files` directory and an upstream-edit comment convention; their presence means this skill applies.
 
 ## Workflow — before writing a line
 

@@ -11,5 +11,5 @@ Constraints: verify code over navigation docs; check overlays after core paths.
 
 ## TGUI Task
 
-Start with: `tgui_guide.md` and `$ss13-tgui`.
+Start with: `$ss13-tgui`.
 Verify first: neighboring backend ui_interact/ui_act/ui_assets procs and frontend imports/assets.

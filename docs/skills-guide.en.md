@@ -53,7 +53,7 @@ Example requests:
 
 ## How they work together
 
-1. The controller looks at the task and assigns roles (the dispatch table in its SKILL.md).
+1. The controller looks at the task and assigns roles (the dispatch gates in its SKILL.md).
 2. For combined tasks the order is fixed: **placement beats implementation** (modular-content decides file structure; coding/tgui decide contents), and **the DM side is separated from the frontend** (byond-ss13-coding owns everything up to the `ui_data`/`ui_act` boundary; ss13-tgui owns the rest).
 3. Truth hierarchy: live repo code > semantic base (fork facts) > skill (general patterns). On engine semantics, byond-ss13-coding has the final word.
 

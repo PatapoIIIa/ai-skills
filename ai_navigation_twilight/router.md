@@ -9,7 +9,7 @@ Generated for Twilight-Axis on 2026-07-09. Primary Fast Start entrypoint.
 | before any medium / high / unclear-scope edit | open `human_checking.md` first |
 | navigation docs say something does not exist or give no result | do not conclude absence; verify with direct `rg` / file search |
 | lookup returns no SS*, proc, type, or system | search `code/`, `modular_twilight_axis/`, `modular_deserttown/`, and `modular/` directly |
-| TGUI/browser UI task | bind `tgui_guide.md` with `$ss13-tgui`; base gives local facts, skill gives invariants |
+| TGUI/browser UI task | bind `$ss13-tgui` directly; entry proc here is `ui_interact` (not `tgui_interact`) — verify with `rg "ui_interact\("` before assuming |
 | path from docs disagrees with code | code wins; fix the doc after task |
 
 
@@ -30,12 +30,12 @@ Generated for Twilight-Axis on 2026-07-09. Primary Fast Start entrypoint.
 | subsystem or process loop freezes/hangs | processing_hazards.md |
 | symptom-first bug report | debug_routes.md |
 | runtime error text | runtime_errors.md |
-| qdel, del, Destroy, ref leak | runtime_errors.md -> coding_standards.md |
-| overlays, underlays, appearances, planes, filters, particles, lighting | visuals_guide.md |
+| qdel, del, Destroy, ref leak | runtime_errors.md -> `$byond-ss13-coding` (ss13-architecture.md, style-and-review.md) |
+| overlays, underlays, appearances, planes, filters, particles, lighting | subsystem_map.md / architecture.md for local subsystem paths -> `$byond-ss13-coding` (performance.md) for the invariants |
 | icon smoothing, iconstate2appearance, appearance cache | icon_rendering.md |
-| performance, tick budget, server lag | engine_limits.md -> performance_gotchas.md |
-| code style, signal pattern, GC, harddel, CI, processing | coding_standards.md |
-| TGUI interface, ui_interact/ui_data/ui_act, React/TS, browser assets/CDN | tgui_guide.md + $ss13-tgui |
+| performance, tick budget, server lag | engine_limits.md -> performance_gotchas.md -> `$byond-ss13-coding` (performance.md) |
+| code style, signal pattern, GC, harddel, CI, processing | `$byond-ss13-coding` (style-and-review.md, ss13-architecture.md) |
+| TGUI interface, ui_interact/ui_data/ui_act, React/TS, browser assets/CDN | `$ss13-tgui` directly; local owners/paths are in system_map.md/subsystem_map.md |
 | keyword or feature-name routing | entrypoints.md |
 | BYOND type path `/datum`, `/mob`, `/obj`, `/turf`, `/area` | type_index.md |
 | lifecycle, timing, scheduler, round flow | runtime_flow.md |

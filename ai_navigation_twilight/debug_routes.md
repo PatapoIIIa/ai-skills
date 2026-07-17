@@ -2,8 +2,8 @@
 
 | Symptom | Open first |
 |---|---|
-| Blank/white TGUI, all browser windows fail | tgui_guide.md + $ss13-tgui runtime triage |
-| TGUI asset/image missing | tgui_guide.md; check /datum/asset registration and resolveAsset mapping |
+| Blank/white TGUI, all browser windows fail | $ss13-tgui runtime triage |
+| TGUI asset/image missing | $ss13-tgui; check /datum/asset registration and resolveAsset mapping |
 | Action button does nothing | backend ui_act in owning DM file; validate params and return TRUE |
 | Combat chain breaks | combat_signal_map.md; code/_onclick/**; rogueweapon files |
 | Movement/collision wrong | movement_signal_map.md; code/controllers/subsystem/movement/** |
@@ -13,4 +13,4 @@
 | Origin/lore choice wrong | modular_twilight_axis/lore/** and preferences overlay |
 | Desert map/content wrong | modular_deserttown/** and _maps/map_files/deserttown/** |
 | Process loop freezes without runtimes | processing_hazards.md then subsystem owner |
-| Runtime qdel/harddel/ref error | runtime_errors.md then coding_standards.md |
+| Runtime qdel/harddel/ref error | runtime_errors.md then $byond-ss13-coding |
