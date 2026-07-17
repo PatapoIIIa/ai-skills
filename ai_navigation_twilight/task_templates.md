@@ -5,7 +5,7 @@ Agents: if you opened this file for routing, go to `router.md`.
 ## Minimal Fast Task
 
 Goal: <what to change/diagnose>
-Repo: `C:/Axis/Twilight-Axis`
+Repo: Twilight-Axis
 Start with: `router.md`
 Constraints: verify code over navigation docs; check overlays after core paths.
 

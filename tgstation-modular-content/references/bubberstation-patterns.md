@@ -1,6 +1,6 @@
 # Bubberstation modular patterns (reference)
 
-Grounded in static analysis of `C:\Axis\Bubberstation` (a Skyrat-derived, /tg/-tracking fork). Bubberstation carries **two** modular roots: `modular_skyrat/` (inherited from its Skyrat upstream, ~210 modules) and `modular_zubbers/` (Bubberstation's own, the actively-grown one). Both follow the same internal shape. The authoritative in-repo doc is `modular_zubbers/readme.md` ("The modularization handbook - Bubber style"); `modular_skyrat/module_template.md` is the per-module readme template.
+Grounded in static analysis of a Bubberstation checkout (a Skyrat-derived, /tg/-tracking fork) — wherever that checkout lives is local to the machine this skill runs on; never assume a fixed path. Bubberstation carries **two** modular roots: `modular_skyrat/` (inherited from its Skyrat upstream, ~210 modules) and `modular_zubbers/` (Bubberstation's own, the actively-grown one). Both follow the same internal shape. The authoritative in-repo doc is `modular_zubbers/readme.md` ("The modularization handbook - Bubber style"); `modular_skyrat/module_template.md` is the per-module readme template.
 
 ## Table of contents
 1. The two-folder split: `master_files/` vs `modules/`

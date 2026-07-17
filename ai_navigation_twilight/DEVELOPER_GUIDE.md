@@ -1,6 +1,6 @@
 # Developer Guide
 
-This folder is a mental snapshot of `C:/Axis/Twilight-Axis` for agents. It is not source code and not proof that something exists.
+This folder is a mental snapshot of the Twilight-Axis repository for agents. It is not source code and not proof that something exists.
 
 Handoff pattern:
 

@@ -1,6 +1,6 @@
 ---
 name: "twilight-axis-ai-navigation"
-description: "Prefer this skill whenever the current workspace or user request involves C:/Axis/Twilight-Axis, the Twilight-Axis/RogueTown BYOND Dream Maker codebase, roguetown.dme, modular_twilight_axis, modular_deserttown, Twilight TGUI, repository routing, type path lookup, subsystem ownership, signal/COMSIG validation, modular overlay checks, or refreshing this ai_navigation snapshot. Use it before broad searches to route work through current Twilight-Axis paths; combine with ss13-tgui for TGUI/web UI work."
+description: "Prefer this skill whenever the current workspace or user request involves a Twilight-Axis/RogueTown checkout, the Twilight-Axis/RogueTown BYOND Dream Maker codebase, roguetown.dme, modular_twilight_axis, modular_deserttown, Twilight TGUI, repository routing, type path lookup, subsystem ownership, signal/COMSIG validation, modular overlay checks, or refreshing this ai_navigation snapshot. Use it before broad searches to route work through current Twilight-Axis paths; combine with ss13-tgui for TGUI/web UI work."
 ---
 
 # Twilight-Axis AI Navigation
@@ -9,9 +9,9 @@ Use this skill to route work through the current Twilight-Axis repository struct
 
 ## Core Rules
 
-- Treat this navigation layer as a routing aid. Code in `C:/Axis/Twilight-Axis` is always the source of truth; verify load-bearing facts with `rg` or neighboring files before editing.
+- Treat this navigation layer as a routing aid. The Twilight-Axis repository's code is always the source of truth; verify load-bearing facts with `rg` or neighboring files before editing.
 - Use the cheapest entrypoint that fits the task; `router.md` is the default fast start.
-- Repository root: `C:/Axis/Twilight-Axis`; project file: `roguetown.dme`.
+- Repository: Twilight-Axis (wherever it's checked out locally — never assume a fixed drive/folder); project file: `roguetown.dme`.
 - Primary Twilight overlay is `modular_twilight_axis/**`; also check `modular_deserttown/**` and legacy `modular/**` when a core branch is extended.
 - For TGUI/browser UI tasks, bind this base with `$ss13-tgui` directly; local owners/paths live in `system_map.md`/`subsystem_map.md` (entry proc here is `ui_interact`, not `tgui_interact`).
 - Before medium/high/unclear-scope gameplay edits, read `human_checking.md` and get human approval for blast radius.
@@ -35,7 +35,7 @@ Use this skill to route work through the current Twilight-Axis repository struct
 
 | Domain | Current route |
 |---|---|
-| Repository root | C:/Axis/Twilight-Axis |
+| Repository | Twilight-Axis (path is local to this machine) |
 | Project file | roguetown.dme |
 | Primary overlay | modular_twilight_axis/** |
 | Secondary map/content overlay | modular_deserttown/** |
@@ -47,7 +47,7 @@ Use this skill to route work through the current Twilight-Axis repository struct
 
 ## Refresh Workflow
 
-1. Scan `C:/Axis/Twilight-Axis` and trust source over existing docs.
+1. Scan the Twilight-Axis repository and trust source over existing docs.
 2. Refresh routing docs from live paths.
 3. Regenerate `subsystem_map.md` from `SUBSYSTEM_DEF*` declarations.
 4. Regenerate `signal_map.md` from `COMSIG_*`, `SEND_SIGNAL`, and `RegisterSignal` usage.

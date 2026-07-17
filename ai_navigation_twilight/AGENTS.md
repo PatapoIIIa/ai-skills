@@ -1,13 +1,13 @@
 # Repository Agent Guide
 
-Canonical standalone base: `C:/Axis/ai-skills/ai_navigation_twilight`. Target repository: `C:/Axis/Twilight-Axis`.
+Canonical standalone base: this `ai_navigation_twilight` folder, kept alongside the rest of the ai-skills content — never assume a fixed disk path for it. Target repository: Twilight-Axis (project file `roguetown.dme`), wherever it's checked out locally.
 
 Terminology:
 
 - `AI mapping`, `navigation layer`, or `mental snapshot` means these repository-orientation docs.
 - It does not mean in-game map files under `_maps/**`, `code/modules/mapping/**`, or `SSmapping`.
 
-Treat this navigation layer as a routing aid. Code in `C:/Axis/Twilight-Axis` is always the source of truth; verify load-bearing facts with `rg` or neighboring files before editing.
+Treat this navigation layer as a routing aid. The Twilight-Axis repository's code is always the source of truth; verify load-bearing facts with `rg` or neighboring files before editing.
 
 ## Start Mode Selection
 
@@ -23,7 +23,7 @@ Treat this navigation layer as a routing aid. Code in `C:/Axis/Twilight-Axis` is
 
 1. Open `router.md`.
 2. Choose exactly one helper file.
-3. Open up to two source files from `C:/Axis/Twilight-Axis`.
+3. Open up to two source files from the Twilight-Axis repository.
 4. Check `modular_twilight_axis/**` first, then `modular_deserttown/**` and legacy `modular/**` if the core branch is extended.
 5. Escalate only if unresolved.
 6. Before edits, classify blast radius with `human_checking.md`.

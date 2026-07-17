@@ -1,6 +1,6 @@
 # Architecture
 
-Generated on 2026-07-09 from `C:/Axis/Twilight-Axis`.
+Generated on 2026-07-09 from the Twilight-Axis repository.
 
 Twilight-Axis is a RogueTown/Vanderlin-family BYOND DM codebase. The project manifest is `roguetown.dme` with 4176 include lines. Core code is in `code/**`; fork content is layered mostly through `modular_twilight_axis/**`, with `modular_deserttown/**` for desert map/content and legacy `modular/**` for older modular additions.
 
