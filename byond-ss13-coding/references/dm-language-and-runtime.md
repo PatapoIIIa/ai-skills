@@ -16,6 +16,7 @@ Engine-tier facts (tier 1). Sources are tagged: **[DM Ref]** = official DM Refer
 - [Preprocessor and compile-time](#preprocessor-and-compile-time)
 - [Built-in movement and spatial procs](#built-in-movement-and-spatial-procs)
 - [animate() and visual timing](#animate-and-visual-timing)
+- [Particles](#particles)
 - [Common runtime errors and defenses](#common-runtime-errors-and-defenses)
 
 ## Types and inheritance
@@ -72,6 +73,7 @@ Verified against [DM Ref: garbage]:
 - GC is reference counting. When the count hits zero, the object is freed. **Circular references are never collected** — a pair of datums pointing at each other leaks until something breaks the cycle or hard-deletes.
 - Things that count as references: stored in a var; item in (or key of) a list; has a `tag`; on the map (always true for turfs); inside `contents`; inside `vis_contents`; a temporary value in a still-running proc (including a *sleeping* proc's `src`, args, and locals); a mob with a `key`; an image attached to an atom.
 - `world.contents` does **not** count as a reference. Turfs and areas are not GC'd at all. Mobs with a key and anything with a non-empty `tag` are effectively immortal until those are cleared.
+- On world shutdown, every object is torn down regardless of reference count [DM Ref: garbage] — this is an engine-level memory fact, not a promise that a codebase's own `Destroy()` proc runs for each one; don't rely on shutdown to fire cleanup side effects that live in `Destroy()`.
 - `del obj` clears the obvious references first, then — if references remain — **searches all of memory** for the rest. That search is the "hard delete" cost, and it scales with world size (per the engine developer, scanning lists is roughly linear in the combined length of all lists in the game [dev 2023-11-15]). The gradient: references sitting in running/sleeping procs are cleared cheaply up front; references buried in lists are what makes the full search expensive [dev 2023-12-14]. This is why every profiled codebase uses `qdel()` + `Destroy()` (clean your own references, let refcounting do the free) and treats hard deletes as bugs. See ss13-architecture.md → Lifecycle.
 - `\ref[x]` / weakref datums hold a non-counting reference; resolving may return null. Use for "cares about but doesn't own" relationships.
 
@@ -98,6 +100,7 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 - Include order matters: defines must be included before code that uses them, which is why every profiled repo keeps `code/__DEFINES/` first in the `.dme`. Fork overlays compile **last** so their re-opened types win.
 - `#undef` file-local macros at end of file to prevent cross-file leaks. [tg STYLE]
 - Compile-time type checking is shallow: the `:` operator bypasses it entirely (banned in all profiled style guides — cast properly), and string type paths (`"/obj/item"`) bypass existence checks (also banned).
+- **Version-gate with `#if DM_VERSION >= 515` / `>= 516`** (compile-time; `DM_BUILD` is the beta-cycle minor version, rarely needed outside BYOND's own beta testing) — this is the actual mechanism behind every "515+"/"516+" feature note elsewhere in this skill (`caller`/`callee` walking, `client.RenderIcon`, `byondStorage`, the native `BYOND` JS object). For logic that can't be resolved at compile time (e.g. per-connecting-client capability checks), the runtime equivalents are `world.byond_version`/`world.byond_build` and `client.byond_version`/`client.byond_build`. [DM Ref: preprocessor DM_VERSION, DM_BUILD]
 
 ## Built-in movement and spatial procs
 
@@ -105,12 +108,20 @@ DM is single-threaded with cooperative scheduling; `sleep` and `spawn` are the y
 - Max view size is about 5000 tiles (~70×70). [DM Ref: client.view var — corrects older material claiming a hard max of 10]
 - `walk_to`/`step_to` **silently do nothing if the target is farther than 2× `world.view` steps** [DM Ref: walk_to] — a classic "mob just stands there" bug.
 - The `walk_*()` family runs in an engine-internal loop outside any subsystem's control; MC-based codebases ban it and provide a movement manager (tg: `SSmove_manager`/`GLOB.move_manager`; check the local equivalent). Also, an atom in a walk queue is retained by it until `walk(x, 0)`. [tg STANDARDS, DM Ref]
+- **Gliding** (`glide_size` var, `LONG_GLIDE` appearance flag) is what makes a tile-to-tile move look smooth instead of an instant jump; leave `glide_size` unset to let the client scale it itself against `client.fps` vs `world.fps`. Without `LONG_GLIDE`, diagonal glides follow strict Euclidean distance (slower than cardinal); with it, a diagonal takes exactly as long as a cardinal move. **Gotcha**: under `LEGACY_MOVEMENT_MODE`, setting any bound/step var away from its default silently turns gliding off for that atom. [DM Ref: notes/gliding]
+- **Pixel movement** (`bound_x`/`bound_y`/`bound_width`/`bound_height`, `step_size`/`step_x`/`step_y` on movable atoms) lets a mover advance in smaller-than-a-tile steps — relevant only on forks that actually use it (most SS13 forks stay tile-based; check before assuming this applies). Two gotchas when it is: `Enter()`/`Exit()` can fire for several turfs/areas in a single move, or **not fire at all** if the atom stays within one turf's pixel bounds — never assume a 1:1 call-per-tile-crossing; and `pixel_x`/`pixel_y`/`pixel_z` are purely visual offsets that do **not** move the bounding box, so collision/hit-testing code must not treat them as position. [DM Ref: notes/pixel-movement]
 
 ## animate() and visual timing
 
 - **The server-side appearance change from `animate()` is instant.** The animation itself is a set of interpolation instructions sent to the client; the atom's actual appearance is already the final state of the last `animate()` call. Server code reading appearance vars mid-"animation" sees the end state, not the interpolated one. [dev 2024-04-01]
 - **Don't sleep between chained `animate()` steps.** A superseding animation started after a sleep begins from whatever the appearance happens to be then, which is inconsistent with setting up the full chain at once — build multi-stage animations as one `animate(...)` + `animate(...)` chain in a single execution. [dev 2025-04-21]
 - `animate()` is for visual interpolation, not gameplay position: a projectile's real trajectory should be stepped tick by tick; use animate only for cosmetics like spin. [dev 2025-04-21]
+
+## Particles
+
+- `/particles` is a client-side-computed visual-effect datum — spawns and tracks many pixels or icons with a lifespan (confetti, sparks, exhaust, rain) entirely on the client, off the server's tick budget once attached. Instantiate with `new`, configure vars, assign to an atom's `particles` var. [DM Ref: notes/particles]
+- **Silent no-op gotcha**: vector/color particle vars don't support partial (indexed) mutation — `particles.gravity[2] = 0` does nothing, silently. Reassign the whole vector instead (`particles.gravity = list(x, 0, z)`). Same family of trap as the `animate()`-after-sleep and `RenderIcon` savefile issues elsewhere in this skill: looks like it should work, fails without an error. [DM Ref: notes/particles]
+- Two built-in performance knobs: `count` (max concurrent particles) and `spawning` (particles created per 0.1s tick). The z coordinate must resolve to between -100 and 100 after projection or the particle isn't guaranteed to display. [DM Ref: notes/particles]
 
 ## Common runtime errors and defenses
 
