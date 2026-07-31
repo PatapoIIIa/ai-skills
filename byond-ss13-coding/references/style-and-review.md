@@ -29,6 +29,7 @@ Language use:
 - `TRUE`/`FALSE` for booleans.
 - No `:` type-unsafe access — cast to the proper type. No string type paths.
 - `static` keyword over the misleading `global` for type-scoped vars.
+- **`::` and `initial()` read compile-time scalars — not lists.** A type-level `var/list/x = list(...)` is built per instance at construction, so `SomeType::listvar` / `initial(x.listvar)` do not give you its contents. Reading list-valued config off a type genuinely requires an instance (or a hand-built static index). Before recommending "drop the instance, use static access", check the field types: scalars yes, lists no.
 - Prefer `::` over `initial()` when the type is static at compile time (modern tg; older forks may lack `::` support — check the local BYOND version before using).
 - Avoid getter procs for plain var access (real proc-call overhead, no encapsulation benefit in DM); prefer vars maintained by setters when derived state must stay in sync.
 - Explicit `return value` over implicit `.` mutation, except the idiomatic `. = ..()`. Use `.` deliberately for runtime-resilient fallbacks and then `return .` explicitly.
@@ -61,6 +62,8 @@ From tg STANDARDS (applies everywhere; exploits don't care about lineage):
 ## Code review checklist
 
 Work through in order; the early items are where SS13 patches actually break.
+
+**Before you file a memory finding — the false-leak trap.** DM is refcounted (dm-language-and-runtime.md → References and garbage collection). A short-lived datum stored only in a proc local is freed the moment that local goes out of scope; **that is not a leak and must never be reported as one.** `new` in a loop with no stored reference is at most *allocation churn* (a perf note needing `[measure]`), and an accompanying `qdel()` on such a datum is merely redundant, not a fix. Real leaks in DM need a surviving reference: a global/instance var, a list entry, a `tag`, map presence, `contents`/`vis_contents`, a keyed mob, or a reference **cycle** (the one case refcounting genuinely cannot collect). Confirm which of those applies and name it, or don't call it a leak. Reviewers get this wrong by importing intuition from tracing-GC or manual-memory languages — cite the mechanism, not the habit.
 
 **Lifecycle and references**
 1. Everything acquired in `Initialize`/`New`/attach is released in `Destroy`/detach: signals, timers (stored ids + `deltimer`), processing (`STOP_PROCESSING`), global-list entries, mutual backrefs.
