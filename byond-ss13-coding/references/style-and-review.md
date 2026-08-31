@@ -47,6 +47,16 @@ Language use:
 - Multi-statement macros: `do { ... } while (FALSE)` scope + `__`-prefixed internals; never evaluate an argument twice (hoist into `__` vars).
 - Be hygienic: pass in what the macro needs; leaking or consuming call-site vars needs a strong reason.
 - `#undef` file-local defines at file end; shared defines live in the defines tree (`code/__DEFINES/`), never in feature files.
+- A module that ships a paired `*_deinclude.dm` of `#undef`s only works if the `.dme` actually includes it after the module's section — check before assuming the macros are scoped. An unincluded deinclude file is dead weight and every define in the module is globally visible for the rest of the compile.
+
+## Return-type annotations (SpacemanDMM)
+
+When a proc's result is immediately field-accessed, `field_access_static_type` needs a declared return type. Two forms compile:
+
+- `RETURN_TYPE(/list)` as the first statement of the proc body — expands to `set SpacemanDMM_return_type = /list` under SpacemanDMM and to nothing under DreamMaker. **This is the tg-family convention and what reviewers expect.**
+- `/proc/foo() as /list` on the definition line — also understood, but it is the minority form and reads like the `as` input-type clause on verb arguments.
+
+Prefer `RETURN_TYPE()`. Grep the repo before choosing: whichever form dominates locally wins, and mixing both inside one module is the thing to avoid.
 
 ## Security checklist
 

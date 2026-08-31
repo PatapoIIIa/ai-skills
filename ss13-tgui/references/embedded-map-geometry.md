@@ -63,6 +63,10 @@ Discipline:
 
 `ByondUi` winsets `{parent, ...params, pos, size}` once on mount and re-winsets the SAME mount-time params on window resize (stale closure). Therefore:
 
+> **Confirmed against `tgui-core` source, 2026-08-31** (`dist/components/ByondUi.js`, byte-identical in 5.6.0 and 6.1.1): the effect hook takes an **empty dependency array**, so nothing after mount reacts to `params` at all; the 100 ms-debounced `resize` handler re-renders from the first-render closure; `parent: Byond.windowId` is injected before your params spread. Everything in this section follows mechanically from those three facts, so it holds for both tgui-core generations.
+>
+> Independently corroborated by a production Vanderlin-family fork's character-setup menu, which arrived at this exact architecture: frontend measures three preview boxes with `getBoundingClientRect()`, debounces 250 ms, ships sizes + `devicePixelRatio` + computed zooms + bbox to DM through one `act()` report; DM logs the whole line behind a debug flag and then `winset`s `zoom=` and `background-color=` onto each view's `assigned_map`. React `key`s hold only the stable map ref — never the zoom.
+
 - **Never put ANY changeable param (zoom, sizes, background-color) in the React `key`.** A key change unmounts (`winset parent: ''`) and recreates the control — a visible flash. Field-proven twice: zoom-in-key made species switches flash; backdrop-in-key made background switches flash. The key is the map id, nothing else.
 - **Dynamic param updates go through DM `winset`** after creation; they stick, but expect the component's resize handler to re-assert its original params — have the DM side re-push ALL dynamic params (zoom, background-color) on its own recurring signal (e.g. after each frontend geometry report), so any stale re-assert self-heals.
 - Mount-time params are still worth setting correctly: they apply instantly with zero server round-trip.

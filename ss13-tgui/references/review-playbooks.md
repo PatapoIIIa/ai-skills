@@ -124,7 +124,7 @@ Read `references/byond-ui-and-devserver.md`.
 Prioritize:
 
 - `ByondUi` only for actual BYOND skin controls such as maps/cameras;
-- stable `id`, `parent: config.window`, correct control `type`, and nonzero layout box;
+- stable `id`, correct control `type`, and nonzero layout box (plus `parent: config.window` **only if this repo's other ByondUi consumers pass it** — modern tgui-core forks do not);
 - compiled/loaded `skin.dmf` contains the target controls before runtime code mutates them;
 - runtime `winset`/theme/window code does not write to missing ids or detached controls;
 - route registration and wrapper/theme in old in-tree tgui;

@@ -135,8 +135,17 @@ skin control I/O; `winclone(player, source_id, clone_id)` — clone skin control
   `icon2base64()` built on `WRITE_FILE(savefile[...], icon)` fails with a **client-side "Invalid
   argument" dialog and ZERO server runtime** (symptom: popup on every UI open, runtime logs
   clean), and wrapping the result in `icon(raw_render)` does NOT normalize it. Deliver via
-  `fcopy()` to a served file / asset transport — the pattern the only real-world consumers use
-  (painting canvases `fcopy` it straight to PNG) — never through savefile-based base64 helpers.
+  `fcopy()` to a served file / asset transport — never through savefile-based base64 helpers.
+  **Both halves re-confirmed in a production Vanderlin-family fork (2026-08-31)** — the only
+  real-world RenderIcon consumer in the sampled corpus. Its painting canvas does
+  `var/icon/rendered = usr.client.RenderIcon(src)` and passes it to a subsystem ending in
+  `fcopy(painting, "data/…/[title].png")`: straight to PNG, no savefile anywhere. The same file is
+  live field evidence for the plane-master caveat above — immediately before rendering it runs
+  `cut_overlay(overlays[1]) // fucking emissives`, i.e. the authors hit the emissive-blocker
+  silhouette in production and fixed it by stripping the overlay first, exactly the workaround this
+  reference prescribes. That fork also shows a use case worth knowing: **overlay-count collapsing** —
+  past ~150 accumulated overlays it re-bakes them into a single icon and clears the list, trading a
+  client round-trip for a much cheaper appearance.
   Related fork idiom: tg-family `icon2base64()` returns the RAW base64 string without the
   `data:image/png;base64,` prefix — every caller wraps it manually; a "broken image with alt
   text" in tgui is usually a missing prefix, not a bad icon.

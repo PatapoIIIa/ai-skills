@@ -6,11 +6,15 @@ Read this to calibrate "is this rule universal or fork-local?" before applying a
 
 | Repo | Role here | Sampled snapshot | tgui-core? | Backend entry proc | Components import |
 | --- | --- | --- | --- | --- | --- |
-| tgstation | Canonical modern /tg/ baseline | June 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
-| Vanderlin | tgui-core fork and reviewed redesign sample | June 2026 | yes (^5.6) | `ui_interact` | `tgui-core/components` |
+| tgstation | Canonical modern /tg/ baseline | June 2026; re-checked 2026-07-18 | yes — **`^6.1.1`** (was `^5.10` at sampling) | `ui_interact` (626 uses / 419 files) | `tgui-core/components` |
+| Vanderlin (incl. downstream forks of it) | tgui-core fork and reviewed redesign sample | June 2026; downstream fork re-checked 2026-08-31 | yes — still `^5.6.0` while tg is on `^6.1.1` | `ui_interact` (81 uses, `tgui_interact` **0**) | `tgui-core/components` |
 | Bubberstation | /tg/-derived tgui-core fork with modular preferences examples | June 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
 | cmss13-MARINES | Independent codebase, older port | April 2026 | **no** | **`tgui_interact`** | **`tgui/components`** (local) |
 | BandaStation-Kagelite_DEV | /tg/-derived fork-of-fork | May 2026 | yes (^5.10) | `ui_interact` | `tgui-core/components` |
+
+**tgui-core moves fast, and forks lag it by a whole major version.** tgstation went `^5.10` → `^6.1.1` between two checks weeks apart (a *major* bump — breaking changes expected, not hypothetical), while a live Vanderlin-family fork checked 2026-08-31 was still on `^5.6.0`. So "current tgui-core" means nothing without reading *this* repo's `tgui/packages/tgui/package.json`. Any version-anchored statement here — notably the `DmIcon` prop list "verified present in 5.6.0" — must be re-verified against that file and the installed package; a component that still exists is not proof its props are unchanged.
+
+**But do not over-rotate on version numbers either.** The one component this skill leans on hardest, `ByondUi`, is **byte-identical between 5.6.0 and 6.1.1** (`dist/components/ByondUi.js` diffed 2026-08-31): same auto-`parent: Byond.windowId`, same `phonehome`-defaults-on, same empty-dependency effect hook, same 100 ms resize debounce. Its behavioural rules in `SKILL.md` therefore hold across both generations — the split that actually matters for `ByondUi` is **tgui-core vs legacy in-tree**, not 5.x vs 6.x.
 
 The single most important takeaway from this table: **the same component vocabulary and lifecycle ride on top of fork-local names and import paths.** cmss13 renamed the framework entry proc to `tgui_interact` (169 files vs 16 `ui_interact`) and ships its components in-tree at `tgui/components` instead of depending on `tgui-core`. An agent that hardcodes `ui_interact` + `tgui-core/components` from memory will write code that does not compile in cmss13. Always grep a neighboring interface in the *current* repo for the entry-proc name and the component import path before writing.
 

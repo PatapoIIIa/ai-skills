@@ -23,15 +23,11 @@ Old in-tree `/tg/` mechanics:
 
 Use it for actual BYOND controls such as an embedded map/camera view. Do not use it for ordinary buttons, inputs, panels, or layout; use normal tgui components for those.
 
-## Correct usage shape
+## Usage shape — two generations, pick by what the repo imports
 
-Use the local component import path. In old in-tree tgui this was:
+Use the local component import path; it tells you which generation you are in.
 
-```jsx
-import { ByondUi } from '../components';
-```
-
-Camera-console style usage:
+**Legacy in-tree tgui** — `import { ByondUi } from '../components';`
 
 ```jsx
 const { data, config } = useBackend(props);
@@ -40,14 +36,28 @@ const { data, config } = useBackend(props);
   className="CameraConsole__map"
   params={{
     id: data.mapRef,
-    parent: config.window,
+    parent: config.window,   // legacy only — see the parent note below
     type: 'map',
   }} />
 ```
 
+**Modern tgui-core** — `import { ByondUi } from 'tgui-core/components';`
+
+```jsx
+<ByondUi
+  height="100%"
+  width="100%"
+  params={{
+    id: mapRef,
+    type: 'map',
+  }} />
+```
+
+The second is current tgstation's actual `CameraConsole.tsx` (verified 2026-07-18) — no `parent`, no `config`, sizing via `width`/`height` props. Its `interfaces/common/CharacterPreview.tsx` wrapper is the same shape with a fixed `width="220px"`.
+
 Rules:
 
-- Pass `parent: config.window`; this attaches the BYOND control to the active tgui window.
+- **`parent: config.window` is legacy-only — check the generation before adding it.** In the old in-tree tgui this reference documents, it attaches the control to the active tgui window. Modern `tgui-core` handles parenting internally: current tgstation passes it in **zero** of its 10 ByondUi call sites (verified 2026-07-18), and its canonical wrapper `interfaces/common/CharacterPreview.tsx` is just `<ByondUi width=… height=… params={{ id, type: 'map' }} />`. Copy the neighboring consumer in *this* repo rather than applying either shape from memory.
 - Pass the BYOND skin control `type` (`map`, `button`, etc.) and any other skin params required by the repo's BYOND control setup.
 - Use a stable backend-provided `id` when DM or another control must refer to the same control. Auto-generated ids are fine only for throwaway controls that no backend code addresses.
 - Keep the container visible and nonzero-sized. If the source only updates on render and debounced window resize, avoid placing the control in a scrolling or constantly reflowing region unless the local implementation explicitly handles scroll/reposition.
@@ -112,7 +122,7 @@ For a live per-player preview (character doll in a preferences menu, dressing ro
 - **tgui side is a dumb anchor.** Backend sends the map key (`data["character_preview_view"]`); frontend renders `<ByondUi params={{ id: mapRef, type: 'map' }}>` (tg wraps this as `common/CharacterPreview`). No image state in React at all.
 - **Interactions mutate the dummy, not an image pipeline.** Rotation = `setDir`; hover-preview of a candidate accessory = apply it to the dummy and restore on hover-out; backgrounds = a backdrop screen object or plane. Every base64 cache, flatten proc, and hover-base compositor becomes deletable.
 
-Feasibility check before migrating a base64 preview: the fork has `map_view`/`assigned_map` infra (grep `_onclick/hud/map_popups.dm`) and at least one working `ByondUi` consumer to copy registration from (camera console, color-matrix editor). Both present → migrate; the base64 path should not grow new features.
+Feasibility check before migrating a base64 preview: the fork has `map_view`/`assigned_map` infra (grep for those **names**, not a fixed path — current tgstation keeps them under `code/_onclick/hud/screen_objects/`, forks differ) and at least one working `ByondUi` consumer to copy registration from (camera console, color-matrix editor). Both present → migrate; the base64 path should not grow new features.
 
 Sizing warning: out of the box the doll renders TINY, and the control's world canvas is engine-chosen and unstable (skin-default sized in most configurations, silently flipping to the object bbox after layout changes). Pin the canvas with an invisible background spanning the intended frame, then size via the `zoom` skin param with canvas-center positioning; read `embedded-map-geometry.md` before attempting transforms, icon scaling, or auto-fit tricks — all were field-tested and failed.
 
