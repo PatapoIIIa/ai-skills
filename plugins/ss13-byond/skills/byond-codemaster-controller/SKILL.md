@@ -1,6 +1,6 @@
 ---
 name: "byond-codemaster-controller"
-description: "Master controller for the SS13/BYOND skill ecosystem — the skill-over-skills that decides when and which skill to invoke (byond-ss13-coding, ss13-tgui, tgstation-modular-content, and future ones), defines their interaction contract, and owns per-repository semantic bases (ai_navigation folders): discovery, bootstrap from zero, binding briefs, integrity control. Use at the start of ANY non-trivial task in an SS13/BYOND fork; whenever it is unclear which skill applies or two skills could both apply; and whenever the user mentions семантика/семантический анализ репозитория, семантическая база, ai_navigation, собрать/обновить/проверить базу, navigation layer, восстановить инфраструктуру, новая кодовая база, skill ecosystem, or a navigation doc contradicts the code. Works from zero: no pre-existing bases or registry required."
+description: "Master controller for the SS13/BYOND skill ecosystem — the skill-over-skills that decides when and which skill to invoke (byond-ss13-coding, ss13-tgui, tgstation-modular-content, ss13-tgs-deploy, and future ones), defines their interaction contract, and owns per-repository semantic bases (ai_navigation folders): discovery, bootstrap from zero, binding briefs, integrity control. Use at the start of ANY non-trivial task in an SS13/BYOND fork; whenever it is unclear which skill applies or two skills could both apply; and whenever the user mentions семантика/семантический анализ репозитория, семантическая база, ai_navigation, собрать/обновить/проверить базу, navigation layer, восстановить инфраструктуру, новая кодовая база, skill ecosystem, or a navigation doc contradicts the code. Works from zero: no pre-existing bases or registry required."
 ---
 
 # BYOND Codemaster Controller
@@ -15,6 +15,8 @@ The skill-over-skills for SS13/BYOND work: it routes every task to the right arc
 | 2 | **Architecture skills** | The deepest, fork-invariant design patterns and anti-patterns | installed skills, referenced **by name**: `byond-ss13-coding`, `ss13-tgui`, `tgstation-modular-content` |
 | 3 | **Semantic bases** | Factual current state of one fork (`ai_navigation/` folders); regenerable data, never authoritative over code | discovered on disk (Discovery protocol below) — never hardcoded |
 
+Outside this stack sits one **operations** skill, `ss13-tgs-deploy` (TGS/Docker/hosting/asset delivery). It is dispatched by Gate 1 node 0 and then works alone: it answers questions about the *host a build runs on*, not about the code, so it binds to no semantic base and never composes with the architecture skills. Keep it out of the layer model rather than bending the model to fit it.
+
 Truth hierarchy: **repo code > semantic base (fork facts) > architecture skill (fork-specific claims)** — but an architecture skill always wins on framework invariants and anti-patterns, and `byond-ss13-coding` is the reference on engine semantics (tier-1 facts). A base recommending an anti-pattern is a broken base — fix it.
 
 If a referenced skill is not installed, degrade gracefully: state which skill is missing, continue from the layers that are present, and do not guess its content from memory.
@@ -27,20 +29,23 @@ Don't scan a table of prose conditions looking for the "best fit" — that's how
 
 **Gate 1 — which skill(s) implement the work?**
 
-0. Is the ask purely "where should this go" / mergeability, with no code to write yet? → `tgstation-modular-content` alone. **STOP** (skip Gate 2 — already resolved).
-1. Is this a semantic-base task (create/discover/verify/refresh `ai_navigation/`), or "which skill(s) apply to my task"? → this skill handles it directly, via the Discovery protocol below. **STOP** (skip Gate 2).
-2. Does the task touch `tgui/` files, `ui_interact`/`tgui_interact`/`ui_data`/`ui_act`, `ByondUi`, or a blank/white-window symptom, with **no** DM-side systems work (subsystems, components, signals, lifecycle) in the same change? → `ss13-tgui` alone implements. → go to Gate 2.
-3. Does the task touch **both** `tgui/` work and DM-side systems work in the same change? → `byond-ss13-coding` implements the DM side up to the `ui_data`/`ui_act` boundary; `ss13-tgui` implements everything inside `tgui/`. → go to Gate 2.
-4. Default — everything else (DM coding, review, performance, debugging, porting between forks): `byond-ss13-coding` implements alone. → go to Gate 2.
+0. Is the work about **running a server rather than changing its code** — TGS/tgstation-server, DreamDaemon, Docker, hosting, deploying/migrating/rebuilding an instance, asset-CDN or nginx delivery, `librust_g.so`/build-toolchain failures? → `ss13-tgs-deploy` alone. **STOP** (ops axis: no Gate 2, no semantic base — bases describe code, not hosts).
+1. Is the ask purely "where should this go" / mergeability, with no code to write yet? → `tgstation-modular-content` alone. **STOP** (skip Gate 2 — already resolved).
+2. Is this a semantic-base task (create/discover/verify/refresh `ai_navigation/`), or "which skill(s) apply to my task"? → this skill handles it directly, via the Discovery protocol below. **STOP** (skip Gate 2).
+3. Does the task touch `tgui/` files, `ui_interact`/`tgui_interact`/`ui_data`/`ui_act`, `ByondUi`, or a blank/white-window symptom, with **no** DM-side systems work (subsystems, components, signals, lifecycle) in the same change? → `ss13-tgui` alone implements. → go to Gate 2.
+4. Does the task touch **both** `tgui/` work and DM-side systems work in the same change? → `byond-ss13-coding` implements the DM side up to the `ui_data`/`ui_act` boundary; `ss13-tgui` implements everything inside `tgui/`. → go to Gate 2.
+5. Default — everything else (DM coding, review, performance, debugging, porting between forks): `byond-ss13-coding` implements alone. → go to Gate 2.
 
 **Gate 2 — does placement need a mergeability decision?** (only asked if Gate 1 didn't already STOP)
 
-5. Does the fork track upstream (a `modular_*`/`master_files` convention, or the base/`AGENTS.md` says so) **and** does this specific change need a genuinely new placement (a new file/interface/override), not an edit to something already sitting in its correct modular home? → prepend `tgstation-modular-content`: it decides placement and file layout **first**; whatever Gate 1 selected implements the content inside that placement.
+6. Does the fork track upstream (a `modular_*`/`master_files` convention, or the base/`AGENTS.md` says so) **and** does this specific change need a genuinely new placement (a new file/interface/override), not an edit to something already sitting in its correct modular home? → prepend `tgstation-modular-content`: it decides placement and file layout **first**; whatever Gate 1 selected implements the content inside that placement.
    Otherwise → Gate 1's answer stands unchanged.
+
+**This section is the single source of truth for routing.** The architecture skills each declare only their own boundary and defer here; if one of them appears to restate this table, that copy is drift — fix it there, not by forking the logic.
 
 **If the guards still disagree after both gates** — a real clash means one skill was stretched outside its own guard; re-check the guards rather than picking by feel. **If the task exposes knowledge neither skill has** — route the fact to the right layer: invariant everywhere → the architecture skill (enrichment intake); true only in this fork → the semantic base (§Feedback loop in `references/binding.md`).
 
-New architecture skills join Gate 1 as a new numbered node, in front of the default (node 4) — state its domain guard and where it sits relative to the existing nodes.
+New architecture skills join Gate 1 as a new numbered node, in front of the default (node 5) — state its domain guard and where it sits relative to the existing nodes.
 
 ## Discovery protocol (run this first, every time)
 
@@ -85,6 +90,7 @@ Referenced by name; interaction order is the Skill dispatch gates above. If one 
 | `byond-ss13-coding` | DM semantics, SS13 architecture (MC/subsystems, components, signals, lifecycle/qdel), performance, review | `coding_standards.md`, `subsystem_map.md`, `signal_map.md`, `core_procs.md`, `engine_limits.md` |
 | `ss13-tgui` | TGUI lifecycle, components, ByondUi bridge, runtime triage | `tgui_guide.md`, `signal_map.md`, `coding_standards.md` |
 | `tgstation-modular-content` | Modular overlay patterns, upstream mergeability | `modular_guide.md`, `architecture.md`, `content_patterns.md` |
+| `ss13-tgs-deploy` | TGS/Docker deployment, hosting, asset delivery | **none** — ops skill, binds to no base (see §The three layers) |
 
 ## Decision flow
 

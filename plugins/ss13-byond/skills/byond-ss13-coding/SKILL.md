@@ -21,18 +21,11 @@ Every rule you apply belongs to exactly one tier. Never present a lower-tier rul
 
 Working inside an existing project: **local instructions and surrounding code > fork architecture > tg conventions.** For new or fork-neutral SS13 code, default to modern tgstation style — but never force a tg pattern onto a fork whose architecture rejects it (see [references/repository-profiles.md](references/repository-profiles.md)).
 
-## Ecosystem: who does what
+## This skill's boundary
 
-This skill is an architecture-layer skill in the SS13 skill ecosystem (see the `byond-codemaster-controller` skill for the dispatch and layer contract). Respect the guards:
+Owns the **DM side**: language semantics, SS13 systems, performance, review — up to two edges it does not cross. Past `ui_data`/`ui_act` (payload shape and action security are still this skill's; everything inside `tgui/` is not) → `ss13-tgui`. Where a *new* file goes on a fork that tracks upstream → `tgstation-modular-content`. Neither edge is a handoff of the whole task: this skill keeps implementing on its own side of it.
 
-| Situation | Handoff |
-|---|---|
-| Task touches tgui files, `ui_interact`/`ui_data`/`ui_act`, ByondUi, blank windows, browser assets | Open **ss13-tgui**; this skill keeps only the DM-side data/action boundary |
-| Change must survive upstream re-sync on a /tg/-tracking fork (modular roots, `master_files`, edit tags) | **tgstation-modular-content** decides placement and file layout; this skill decides implementation |
-| Repo needs a semantic base discovered, verified, or bootstrapped (`ai_navigation/` folders) | **byond-codemaster-controller** owns base lifecycle and produces the binding brief |
-| Pure DM/SS13 coding, review, optimization, debugging | This skill alone |
-
-Truth hierarchy across layers: **repo code > semantic base (fork facts) > this skill's fork-specific claims** — but this skill wins on engine invariants and anti-patterns. A base recommending an anti-pattern is a broken base; report it.
+Within its own domain this skill is **the authority on engine invariants** (tier-1) — a semantic base or fork guide that contradicts one is wrong, and saying so is part of the job. For everything else about how the skills combine, and for `ai_navigation/` base lifecycle, `byond-codemaster-controller` is the single source of truth; do not re-derive routing here.
 
 ## Task workflow
 

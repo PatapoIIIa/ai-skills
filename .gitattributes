@@ -1,0 +1,46 @@
+# Line-ending policy for this repository.
+#
+# Nothing here is consumed by a Windows-only tool: the payload is Markdown
+# skills, JSON manifests, Python and shell scripts, read by git, GitHub, Claude
+# Code and a Linux server. So the working tree is pinned LF on every platform,
+# and per-user core.autocrlf / core.eol settings cannot change that.
+#
+# Without this file the LF-ness of the tree is luck. Windows git defaults to
+# core.autocrlf=true, so one contributor editing a shipped .sh is enough to
+# break it — see the *.sh note below.
+
+# Classify text vs binary by content at add time; store LF in the repository so
+# diffs and blame stay clean; check out LF on disk and convert back on add.
+* text=auto eol=lf
+
+# Shell scripts are LF, always and without exception.
+# skills/ss13-tgs-deploy/assets/*.sh are copied onto a Linux host and executed
+# there. `#!/usr/bin/env bash` followed by CRLF makes the kernel search for an
+# interpreter literally named "bash\r"; the script dies with a "not found" that
+# names a binary that plainly exists, which is a genuinely confusing failure to
+# debug from a deploy log. This line is the whole defence.
+*.sh text eol=lf
+
+# Binaries: never line-end converted, never diffed as text. `text=auto` usually
+# detects these, but detection is content-based and an odd header can fool it.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dmi binary
+*.zip binary
+*.skill binary
+*.docx binary
+*.pdf binary
+
+# Adding or changing this file only affects content as it passes through git.
+# An existing checkout must be rewritten once:
+#
+#   git add .gitattributes
+#   git add --renormalize .
+#   git status        # review, then commit
+#
+# --renormalize rewrites the INDEX, not files already on disk. To fix a
+# straggler in the working tree, delete and re-checkout it, then count:
+#   tr -dc '\r' < <path> | wc -c      # must be 0

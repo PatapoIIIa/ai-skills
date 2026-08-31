@@ -1,0 +1,19 @@
+{
+  "name": "ss13-byond",
+  "description": "Skill ecosystem for SS13 and BYOND Dream Maker work: a routing controller plus architecture skills for DM/SS13 coding, TGUI interfaces, modular fork content, and TGS server deployment. Engine facts are verified against the official DM Reference and live tgstation.",
+  "author": {
+    "name": "PatapoIIIa",
+    "url": "https://github.com/PatapoIIIa"
+  },
+  "homepage": "https://github.com/PatapoIIIa/ai-skills",
+  "repository": "https://github.com/PatapoIIIa/ai-skills",
+  "license": "MIT",
+  "keywords": [
+    "ss13",
+    "byond",
+    "dreammaker",
+    "tgstation",
+    "tgui",
+    "dm"
+  ]
+}

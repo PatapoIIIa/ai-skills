@@ -1,0 +1,26 @@
+{
+  "name": "ss13-ai-skills",
+  "owner": {
+    "name": "PatapoIIIa",
+    "url": "https://github.com/PatapoIIIa"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins",
+    "description": "SS13 / BYOND skill ecosystem — a routing controller plus architecture skills for DM coding, TGUI interfaces, modular fork content, and TGS server deployment."
+  },
+  "plugins": [
+    {
+      "name": "ss13-byond",
+      "source": "./plugins/ss13-byond",
+      "description": "Controller + byond-ss13-coding, ss13-tgui, tgstation-modular-content, ss13-tgs-deploy. Install once; updates follow the repository's default branch.",
+      "category": "development",
+      "keywords": [
+        "ss13",
+        "byond",
+        "dreammaker",
+        "tgstation",
+        "tgui"
+      ]
+    }
+  ]
+}

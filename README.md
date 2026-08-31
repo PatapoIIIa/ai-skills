@@ -1,12 +1,71 @@
 # ai-skills
-Набор ИИ скиллов для работы с СС13. Скиллы предоставляются "как есть", вы их используете на свой страх и риск.
 
-A set of AI skills for working with SS13. These skills are provided "as is" and you use them at your own risk.
+Набор ИИ-скиллов для работы с SS13 / BYOND, распространяемый как **плагин Claude Code**. Подписался один раз — дальше обновления приходят сами. Скиллы предоставляются «как есть», вы их используете на свой страх и риск.
+
+A set of AI skills for SS13 / BYOND work, distributed as a **Claude Code plugin**. Subscribe once; updates follow automatically. Provided "as is" — use at your own risk.
+
+## Установка / Install
+
+```bash
+claude plugin marketplace add PatapoIIIa/ai-skills
+```
+
+```bash
+claude plugin install ss13-byond@ss13-ai-skills
+```
+
+Внутри Claude Code — то же самое через `/plugin marketplace add PatapoIIIa/ai-skills`, затем `/plugin install ss13-byond@ss13-ai-skills`.
+
+**Про обновления.** В манифесте намеренно не задано поле `version`: версией считается git SHA, поэтому вы всегда получаете актуальный коммит ветки по умолчанию — без ручного повышения версий с моей стороны и без переустановки с вашей. Обновить прямо сейчас: `/plugin marketplace update ss13-ai-skills`.
+
+*On updates: `version` is deliberately omitted from the manifest, so the git SHA acts as the version and you always track the default branch's latest commit. Force a refresh with `/plugin marketplace update ss13-ai-skills`.*
+
+## Дерево зависимостей / Dependency tree
+
+Один контроллер маршрутизирует задачу; архитектурные скиллы не знают друг о друге и не дублируют логику маршрутизации.
+
+```mermaid
+graph TD
+    U([Задача / Task]) --> C{{byond-codemaster-controller}}
+
+    C -->|хостинг, TGS, Docker| D[ss13-tgs-deploy]
+    C -->|размещение на форке| M[tgstation-modular-content]
+    C -->|интерфейс| T[ss13-tgui]
+    C -->|DM-код, ревью, перф| K[byond-ss13-coding]
+    C -->|база форка| B[(ai_navigation/)]
+
+    K -.->|граница ui_data / ui_act| T
+    M -.->|размещение решается раньше кода| K
+    B -.->|код важнее базы| K
+
+    classDef ctrl fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px,color:#fff
+    classDef ops fill:#4a3410,stroke:#f59e0b,color:#fff
+    classDef data fill:#3b2a5c,stroke:#a78bfa,color:#fff
+    class C ctrl
+    class D ops
+    class B data
+```
+
+Сплошные стрелки — маршрутизация (кто выполняет). Пунктирные — отношения между скиллами: `byond-ss13-coding` отдаёт всё за границей `ui_data`/`ui_act` в `ss13-tgui`; `tgstation-modular-content` решает *куда положить* раньше, чем другие решают *что написать*; семантическая база — подсказка для навигации, код всегда важнее.
+
+*Solid edges = routing (who implements). Dashed = inter-skill contracts: the DM skill hands everything past the `ui_data`/`ui_act` boundary to the TGUI skill; placement is decided before implementation; a semantic base is a routing aid that never outranks code.*
+
+## Что внутри / What's inside
+
+| Скилл | Роль |
+|---|---|
+| `byond-codemaster-controller` | Маршрутизация (два гейта), контракт взаимодействия, жизненный цикл семантических баз |
+| `byond-ss13-coding` | DM-семантика, архитектура SS13, производительность, ревью — авторитет по инвариантам движка |
+| `ss13-tgui` | TGUI-интерфейсы, мост ByondUi, разбор проблем клиента |
+| `tgstation-modular-content` | Размещение контента на форках, переживающее upstream sync |
+| `ss13-tgs-deploy` | Развёртывание сервера через TGS/Docker — ось операций, вне стека кода |
 
 - Документация (RU): [docs/skills-guide.ru.md](docs/skills-guide.ru.md)
 - Documentation (EN): [docs/skills-guide.en.md](docs/skills-guide.en.md)
 - Метрики и тесты (RU): [docs/benchmarks.ru.md](docs/benchmarks.ru.md)
 - Benchmarks & tests (EN): [docs/benchmarks.en.md](docs/benchmarks.en.md)
+
+Папки `ai_navigation_*` в корне — это семантические базы конкретных форков (данные, не скиллы). Они **не входят в плагин** и подписчикам не поставляются.
 
 ## Метрики / Benchmarks
 
