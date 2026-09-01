@@ -10,12 +10,28 @@ Verification is never disabled. If both transports refuse, the caller gets the
 error and reports it rather than working around it.
 """
 
+import os
 import subprocess
 
+from urllib.parse import urlparse
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
 USER_AGENT = "ss13-ai-skills-drift-check"
+
+# Only these hosts ever see the token. The unauthenticated GitHub API allows 60
+# requests an hour, which a CI run can exhaust; a token lifts it. Everything here
+# reads public data either way -- the token buys rate limit, not access.
+TOKEN_HOSTS = ("api.github.com", "raw.githubusercontent.com")
+
+
+def _auth_header(url):
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not token:
+        return {}
+    if urlparse(url).hostname not in TOKEN_HOSTS:
+        return {}
+    return {"Authorization": "Bearer %s" % token}
 
 
 class Transport(object):
@@ -51,16 +67,22 @@ class Transport(object):
 
 
 def _urllib(url, timeout):
-    request = Request(url, headers={"User-Agent": USER_AGENT})
+    headers = {"User-Agent": USER_AGENT}
+    headers.update(_auth_header(url))
+    request = Request(url, headers=headers)
     with urlopen(request, timeout=timeout) as response:
         return response.read().decode("utf-8", "replace")
 
 
 def _curl(url, timeout):
-    result = subprocess.run(
-        ["curl", "-sS", "--fail", "--max-time", str(timeout),
-         "-H", "User-Agent: %s" % USER_AGENT, url],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    args = ["curl", "-sS", "--fail", "--max-time", str(timeout),
+            "-H", "User-Agent: %s" % USER_AGENT]
+    for name, value in _auth_header(url).items():
+        # Passed as an argument, not an env var, so it never lands in a shell history
+        # or a child process' environment beyond this call.
+        args += ["-H", "%s: %s" % (name, value)]
+    args.append(url)
+    result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         raise OSError(result.stderr.decode("utf-8", "replace").strip() or
                       "curl exited %d" % result.returncode)

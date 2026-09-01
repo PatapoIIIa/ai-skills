@@ -1,5 +1,7 @@
 # ai-skills
 
+[![skill-truth](https://github.com/PatapoIIIa/ai-skills/actions/workflows/skill-truth.yml/badge.svg)](https://github.com/PatapoIIIa/ai-skills/actions/workflows/skill-truth.yml)
+
 Набор ИИ-скиллов для работы с SS13 / BYOND, распространяемый как **плагин Claude Code**. Подписался один раз — дальше обновления приходят сами. Скиллы предоставляются «как есть», вы их используете на свой страх и риск.
 
 A set of AI skills for SS13 / BYOND work, distributed as a **Claude Code plugin**. Subscribe once; updates follow automatically. Provided "as is" — use at your own risk.
@@ -77,6 +79,29 @@ graph TD
 - Benchmarks & tests (EN): [docs/benchmarks.en.md](docs/benchmarks.en.md)
 
 Папки `ai_navigation_*` в корне — это семантические базы конкретных форков (данные, не скиллы). Они **не входят в плагин** и подписчикам не поставляются.
+
+## Проверка истинности / Truth checks
+
+Скиллы утверждают факты о реальных репозиториях: где лежит модульный контент, как выглядит тег правки, на какой версии `tgui-core` проверено поведение. Эти факты протухают молча. В репозитории есть три проверки, две из которых гоняются в CI еженедельно — бейдж выше показывает их состояние.
+
+*The skills assert facts about real repositories — where modular content lives, how an edit tag reads, which `tgui-core` a behaviour was verified against. Such facts expire silently. Three checks guard them; two run weekly in CI, and the badge above is their state.*
+
+| Проверка / Check | Что читает / Reads | Состояние на 2026-09-01 |
+|---|---|---|
+| `validate_ecosystem.py` | только этот репозиторий / this repo only | 60 проверок, 0 ошибок |
+| `check_versions.py` | 6 upstream'ов по HTTPS / 6 upstreams over HTTPS | базовая линия совпадает / baseline matches |
+| `verify_claims.py --source upstream` | канонические репозитории через GitHub API | 11 OK, 0 сломанных / 0 broken |
+| `verify_claims.py` (локально / local) | клоны на машине / local clones | 42 OK, 1 DRIFT, 0 сломанных |
+
+**Отслеживаемые upstream'ы / Watched upstreams:** [tgstation](https://github.com/tgstation/tgstation), [Bubberstation](https://github.com/Bubberstation/Bubberstation), [cmss13](https://github.com/cmss13-devs/cmss13), [Vanderlin](https://github.com/Monkestation/Vanderlin), [Ratwood-2.0](https://github.com/Rotwood-Vale/Ratwood-2.0), [Azure-Peak](https://github.com/Azure-Peak/Azure-Peak) — из `dependencies.sh` и `tgui/packages/tgui/package.json`.
+
+Единственный `DRIFT` — не поломка: на форке со сжатой историей (32 коммита) эвристика «какой модульный корень живой» объективно не работает, и скилл теперь честно велит в таком случае спросить, а не угадывать.
+
+*The one `DRIFT` is not a defect: on a fork with a squashed 32-commit history the "which modular root is live" heuristic genuinely cannot decide, and the skill now says to ask rather than guess.*
+
+**Что проверки НЕ покрывают / Not covered:** факты о семантике движка BYOND (тир 1) проверяются по официальному DM Reference вручную — ни один из скриптов их не трогает. Версии читаются только из upstream: локальные клоны для этого не годятся (один отставал на 1039 коммитов). Подробности — в `CLAUDE.md`.
+
+*Engine-semantics facts (tier 1) are verified by hand against the official DM Reference; no script touches them. Versions are read from upstream only — local clones proved unfit (one was 1039 commits behind).*
 
 ## Метрики / Benchmarks
 

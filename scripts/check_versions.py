@@ -33,7 +33,6 @@ import io
 import json
 import os
 import re
-import subprocess
 import sys
 
 try:
@@ -42,12 +41,12 @@ except ImportError:
     sys.stderr.write("PyYAML is required: pip install pyyaml\n")
     raise SystemExit(2)
 
-try:
-    from urllib.request import urlopen, Request
-    from urllib.error import URLError, HTTPError
-except ImportError:                                        # pragma: no cover
-    sys.stderr.write("Python 3 is required\n")
-    raise SystemExit(2)
+from urllib.error import HTTPError, URLError
+
+# Shared with verify_claims.py so the TLS fallback and the GITHUB_TOKEN handling
+# exist once rather than drifting apart in two copies.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _fetch                                                       # noqa: E402
 
 
 SAME, MOVED, NEW, GONE, ERROR = "SAME", "MOVED", "NEW", "GONE", "ERROR"
@@ -64,61 +63,6 @@ def read(path):
 def normalize(spec):
     """Strip npm range prefixes so ^6.1.1 and 6.1.1 compare equal."""
     return (spec or "").lstrip("^~>=< v").strip()
-
-
-def fetch_urllib(url, timeout):
-    request = Request(url, headers={"User-Agent": "ss13-ai-skills-version-watch"})
-    with urlopen(request, timeout=timeout) as response:
-        return response.read().decode("utf-8", "replace")
-
-
-def fetch_curl(url, timeout):
-    """Fallback transport with its own trust store.
-
-    Python's OpenSSL and curl do not always agree about a certificate chain. On
-    a machine behind an intercepting proxy, urllib refused every request here
-    ("Basic Constraints of CA cert not marked critical") while curl accepted the
-    same chain. curl still verifies -- this is a different trust store, not a
-    weaker check. Verification is never disabled; if both transports refuse, the
-    run reports the failure rather than working around it.
-    """
-    result = subprocess.run(
-        ["curl", "-sS", "--fail", "--max-time", str(timeout),
-         "-H", "User-Agent: ss13-ai-skills-version-watch", url],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        raise OSError(result.stderr.decode("utf-8", "replace").strip() or
-                      "curl exited %d" % result.returncode)
-    return result.stdout.decode("utf-8", "replace")
-
-
-def fetch(url, timeout, transport):
-    """Return (text, transport_used). `transport` records what worked last."""
-    if transport["name"] == "curl":
-        return fetch_curl(url, timeout), "curl"
-    try:
-        return fetch_urllib(url, timeout), "urllib"
-    except HTTPError:
-        raise
-    except (URLError, OSError) as exc:
-        if not _is_tls_trust_error(exc) or not _have_curl():
-            raise
-        text = fetch_curl(url, timeout)
-        transport["name"] = "curl"          # stop retrying urllib for every file
-        return text, "curl"
-
-
-def _is_tls_trust_error(exc):
-    return "CERTIFICATE_VERIFY_FAILED" in str(exc) or "SSL" in str(exc)
-
-
-def _have_curl():
-    try:
-        subprocess.run(["curl", "--version"],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    except (OSError, subprocess.SubprocessError):
-        return False
 
 
 def parse_shell(text):
@@ -146,14 +90,14 @@ def collect(config, offline_ok):
     timeout = config["fetch"].get("timeout_seconds", 20)
 
     observed, errors = {}, []
-    transport = {"name": "urllib"}
+    transport = _fetch.Transport()
     for repo in config["repos"]:
         repo_id = repo["id"]
         observed[repo_id] = {}
         for spec in config["files"]:
             url = "%s/%s/%s/%s" % (base, repo["owner_repo"], repo["branch"], spec["path"])
             try:
-                text, _used = fetch(url, timeout, transport)
+                text = transport.get(url, timeout)
             except HTTPError as exc:
                 # A 404 is information: the file is genuinely not in that repo.
                 errors.append((repo_id, spec["path"], "HTTP %s" % exc.code))
@@ -166,7 +110,7 @@ def collect(config, offline_ok):
             for key in spec["keys"]:
                 if key in pins:
                     observed[repo_id][key] = pins[key]
-    return observed, errors, transport["name"]
+    return observed, errors, transport.name
 
 
 def compare(observed, baseline, watched_repos):
