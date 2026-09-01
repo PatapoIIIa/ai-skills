@@ -37,7 +37,7 @@ Use the cheapest mode that fits the task.
 
 If the correct mode or first helper is still unclear, use:
 
-- `ai_navigation/start_matrix.md`
+- `router.md`, then `router_deep.md` if it does not resolve (this base has no start_matrix file)
 
 ### Minimum Handoff
 
@@ -90,7 +90,7 @@ This is the main cost-saving rule.
 ### Which File To Mention For Special Cases
 
 - startup mode choice by task shape:
-  `ai_navigation/start_matrix.md`
+  `router.md`, then `router_deep.md` if it does not resolve (this base has no start_matrix file)
 - bug investigation:
   `ai_navigation/debug_routes.md`
 - new content or mechanics:
@@ -241,7 +241,7 @@ The agent must still verify conclusions against source code.
 ### Какой Файл Указывать Для Частных Случаев
 
 - выбор режима старта по типу задачи:
-  `ai_navigation/start_matrix.md`
+  `router.md`, then `router_deep.md` if it does not resolve (this base has no start_matrix file)
 - баги:
   `ai_navigation/debug_routes.md`
 - новый контент или механика:

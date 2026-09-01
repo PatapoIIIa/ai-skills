@@ -6,7 +6,7 @@ The navigation layer may lag behind the live documents. If this file and the rep
 
 ## Repo-specific facts
 
-- The repo ships its own copies of tg-derived guides: `STANDARDS.md`, `STYLE.md`, `CI.md`, `HARDDELETES.md` — they are the local authority over the skill's tier-3 defaults.
+- Of the tg-derived guides this lineage is often assumed to carry, **only `.github/guides/HARDDELETES.md` actually exists here** (checked 2026-09-01). STANDARDS.md, STYLE.md and CI.md (unbackticked here because they do not exist in this repo) are tgstation's, not this fork's — do not cite them as local authority. Where the fork has no written rule, the surrounding code is the rule.
 - **Delta-arg naming caution:** the shipped guides use tg's `seconds_per_tick` wording, but live subsystem code in this lineage uses the older `delta_time` naming — match the actual signature of the proc you override, not the guide.
 - **Movement manager caution:** the guides' `SSmove_manager` tables are inherited from tg; verify the symbol exists here (`grep -rn "move_manager" code/`) before recommending it — this lineage may keep a different or older movement API.
 - Appearance caching helpers (`iconstate2appearance`-style) exist — see `code/controllers/subsystem/overlays.dm`.

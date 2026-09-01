@@ -32,7 +32,13 @@ Within its own domain this skill is **the authority on engine invariants** (tier
 Follow this order for any implementation, fix, refactor, port, or review task.
 
 1. **Read local instructions first.** Repo root `AGENTS.md`/`CLAUDE.md`, `.github/guides/` (STANDARDS, STYLE, HARDDELETES if present), `CONTRIBUTING.md`, `.editorconfig`, lint configs (`SpacemanDMM.toml`, pragma files). They outrank everything in this skill except engine semantics.
-2. **Identify the codebase family.** Fingerprint it (project `.dme` name, modular roots, defines layout, signal penetration) — see [references/repository-profiles.md](references/repository-profiles.md). Don't assume tg idioms exist until you've seen them.
+2. **Identify the codebase family** — and run it, don't eyeball it. This step is mechanical, deterministic and feeds every step after it, so it ships as a command rather than a description:
+
+   ```bash
+   bash scripts/fingerprint.sh <path-to-checkout>
+   ```
+
+   Read-only. It prints the seven checks from [references/repository-profiles.md](references/repository-profiles.md) → *Fingerprinting an unknown codebase*: project file and include count, which local rule files exist (they outrank this skill), modular roots ranked by **includes** as well as file count, how many files actually use `RegisterSignal`/`AddComponent`/`addtimer`, era markers (`seconds_per_tick` vs `delta_time` vs missing `PROC_REF`), the UI stack and its entry-proc name, and the lint/CI setup. Two real outputs, for calibration: Twilight-Axis returns three modular roots with a clear winner and 356 signal-using files; CEV-Eris returns *no* modular roots and 41 — a hard fork where the tg toolkit is imported skeleton, not living idiom. **Don't assume tg idioms exist until the numbers show them.**
 3. **Use the navigation layer if one exists.** In-repo `ai_navigation/router.md`, or a workspace base found via the `byond-codemaster-controller` discovery protocol. Route through it instead of scanning the repo; verify its load-bearing facts against code before trusting identifiers.
 4. **Locate real definitions** of every type, proc, signal, component, trait, and subsystem you will touch (`grep` for the definition, not the usage). Read the parent chain of any proc you override.
 5. **Study the 2–3 nearest modern implementations** of similar behavior. Prefer recently touched examples (`git log -1 -- <file>`) — old files are fossils of dead conventions, and every large SS13 repo contains plenty.

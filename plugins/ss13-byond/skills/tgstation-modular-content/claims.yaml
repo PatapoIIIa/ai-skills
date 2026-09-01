@@ -176,8 +176,13 @@ claims:
     last_verified: 2026-09-01
     says: >-
       Where several modular roots have accumulated, commit count separates the live one
-      from the fossils by a wide margin (3305 / 743 / 2 when measured). DRIFT here means
-      the ranking is inconclusive on some fork and step 1 needs a fallback.
+      from the fossils by a wide margin (3305 / 743 / 2 when measured). DRIFT means the
+      ranking came out inconclusive on some fork -- which is an EXPECTED outcome on a
+      squashed or re-initialised repository, not a defect: step 1 now ships a fallback
+      (rank by `#include` lines in the .dme, since a file on disk can be dead while an
+      include is load-bearing) and, failing that, an instruction to stop and ask. Treat a
+      DRIFT here as a prompt to check the fallback still discriminates on that fork, not
+      as a broken claim.
     check:
       type: commit_rank
       glob: "modular*"
