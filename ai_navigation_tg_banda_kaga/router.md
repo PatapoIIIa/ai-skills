@@ -1,5 +1,7 @@
 # Router
 
+> **STALE — audited 2026-09-01.** This base carries **no generation stamp at all**, so its age cannot be established; the target repo's last commit is 2026-07-12. Validation found **11 broken path references** (including `code/modules/dynamic/`, `code/modules/crafting/`, several `subsystem_map.md` targets and a missing `type_tree.md`). Use for **routing only**; verify every path and symbol against the code before acting on it. Needs a regeneration pass, not patching.
+
 Generated 2026-05-21 for `BandaStation-Kagelite_DEV`. Primary **Fast Start** entrypoint for normal tasks. Pick one helper, open up to 2-3 source files, escalate only if unresolved.
 
 ## Always

@@ -1,5 +1,7 @@
 # Repository Agent Guide
 
+> **STALE — audited 2026-09-01.** Generated 2026-07-09; the target repo has moved on (last commit 2026-08-23). Structurally this base is the healthiest of the three: **0 broken path references**, and its load-bearing entry-proc claim re-verified (`ui_interact` ×170, `tgui_interact` ×0). Still: treat it as a **routing aid only** — follow it to the right area of the code, then read the code for literal identifiers. Do not quote a symbol from here into a diff without grepping it first.
+
 Canonical standalone base: this `ai_navigation_twilight` folder, kept alongside the rest of the ai-skills content — never assume a fixed disk path for it. Target repository: Twilight-Axis (project file `roguetown.dme`), wherever it's checked out locally.
 
 Terminology:

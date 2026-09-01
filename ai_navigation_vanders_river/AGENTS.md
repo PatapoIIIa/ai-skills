@@ -1,5 +1,7 @@
 # Repository Agent Guide
 
+> **STALE — audited 2026-09-01. The most drifted of the three.** Stamps range 2026-03-11 → 2026-05-23 (up to ~6 months old); the target repo's last commit is 2026-08-14. Validation found **24 broken path references** (much of `tgui_guide.md`, parts of `visuals_guide.md`, `system_map.md` and `router.md`). Note drift can also resolve itself: this base warns that `SSmove_manager` may not exist here — it now does (8 files), so that caution is obsolete. Conversely `delta_time` still dominates `seconds_per_tick` (142 vs 75 files), so that naming note still holds. **Routing only**; regenerate before trusting any specific path.
+
 This repository is meant to be handed to agents after a separate goal statement from the user.
 
 Terminology note:

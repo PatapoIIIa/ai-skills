@@ -274,6 +274,18 @@ instrument defect as a skill defect.
 
 ## Known state
 
+- **Every `ai_navigation_*` base is stale (audited 2026-09-01) and none should be trusted for literal
+  identifiers.** They are routing aids: follow one to the right area of the code, then read the code.
+  Each base's `AGENTS.md` and `router.md` now carries a dated STALE banner with its own numbers.
+  Measured: `ai_navigation_twilight` — 0 broken path refs, generated 2026-07-09, entry-proc claim
+  re-verified, the healthiest; `ai_navigation_tg_banda_kaga` — 11 broken refs and **no generation
+  stamp at all**; `ai_navigation_vanders_river` — 24 broken refs, stamps up to ~6 months old, the
+  worst. Regenerate rather than patch: the controller can rebuild any base from `file-specs.md`.
+  Two lessons from the audit worth keeping: drift can *resolve itself* (this base warns
+  `SSmove_manager` may be absent from Vanderlin; it now exists), and `validate_semantic_base.py`
+  reports skill-relative pointers such as `references/performance.md` as MISSING — those are
+  **false positives** (the base names the owning skill in the same sentence), so filter them out
+  before counting: 15 raw findings in that base were 11 real.
 - `ai_navigation_tg_banda/` is an empty, git-untracked leftover directory.
 - Benchmarks in `docs/benchmarks.*.md` are single-run measurements; their limitations section says
   so, and that honesty is load-bearing — don't quote the numbers without it.

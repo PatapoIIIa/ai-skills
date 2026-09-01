@@ -1,5 +1,7 @@
 # Repository Agent Guide
 
+> **STALE — audited 2026-09-01.** This base carries **no generation stamp at all**, so its age cannot be established; the target repo's last commit is 2026-07-12. Validation found **11 broken path references** (including `code/modules/dynamic/`, `code/modules/crafting/`, several `subsystem_map.md` targets and a missing `type_tree.md`). Use for **routing only**; verify every path and symbol against the code before acting on it. Needs a regeneration pass, not patching.
+
 This is the **Guided Start** mode document of the `ai_navigation/` layer — not the cheapest default. For ordinary work, `ai_navigation/router.md` is cheaper.
 
 The repository's auto-discovered entry file is the root `AGENTS.md`; it establishes the project rules and routes here for Guided Start. This file and the root `AGENTS.md` are consistent.
