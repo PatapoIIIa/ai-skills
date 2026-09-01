@@ -76,7 +76,7 @@ These apply to essentially every DM change, on every fork examined so far (all s
 - **`process()` is frame-independent** — multiply per-second rates by the delta argument (`seconds_per_tick` / `delta_time`, per local naming).
 - **Absolute type paths, no `:` operator, no string type paths, no magic numbers** — defines with names.
 - **Don't recompute what you can cache, don't allocate in a loop what you can hoist** — but only claim a performance win you can argue from call frequency × data size ([references/performance.md](references/performance.md)).
-- **Compile claims are sacred.** If you didn't run it, say "not compiled — run X to verify".
+- **Compile claims are sacred** — the rule and the report format live in [references/style-and-review.md](references/style-and-review.md) → Honest reporting; workflow step 10 is where you apply it. Nothing here restates it a third time.
 
 ## Execution limits
 

@@ -6,154 +6,318 @@
       "lang": "ru",
       "prompt": "Собери семантическую базу ai_navigation для моего репозитория CEV-Eris с нуля.",
       "expected_output": "Runs Stage 0 assessment (family, subsystems, signals, overlay, tgui), builds only applicable files per file-specs.md in stage order, stamps generated inventories with date+command, validates with the script, registers the base in the workspace registry, plans deployment as <repo>/ai_navigation.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 2,
       "lang": "en",
       "prompt": "Build the ai_navigation semantic base for my CEV-Eris repository from scratch.",
       "expected_output": "Runs Stage 0 assessment (family, subsystems, signals, overlay, tgui), builds only applicable files per file-specs.md in stage order, stamps generated inventories with date+command, validates with the script, registers the base in the workspace registry, plans deployment as <repo>/ai_navigation.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 3,
       "lang": "ru",
       "prompt": "Мне нужно добавить новую TGUI-панель настроек погоды в мой репозиторий Rivermist-Hollow-Vanderlin. Составь план.",
       "expected_output": "Discovers the repo's base via the Discovery protocol (in-repo ai_navigation, then workspace registry), dispatches ss13-tgui for implementation (plus tgstation-modular-content for placement if the fork tracks upstream), produces a binding brief (skill invariants + fork-local facts with source files + verification greps), lets code win over any stale base fact it hits.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 4,
       "lang": "en",
       "prompt": "I need to add a new weather-settings TGUI panel in my Rivermist-Hollow-Vanderlin repository. Draft a plan.",
       "expected_output": "Discovers the repo's base via the Discovery protocol (in-repo ai_navigation, then workspace registry), dispatches ss13-tgui for implementation (plus tgstation-modular-content for placement if the fork tracks upstream), produces a binding brief (skill invariants + fork-local facts with source files + verification greps), lets code win over any stale base fact it hits.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 5,
       "lang": "ru",
       "prompt": "Проверь целостность всех трёх семантических баз и почини найденное.",
       "expected_output": "Runs validate_semantic_base.py per base with correct --repo roots, distinguishes real drift from shorthand noise, fixes fast-tier files first, updates stamps, re-syncs deployed copies (diff -rq empty), updates parity notes in integrity.md.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 6,
       "lang": "en",
       "prompt": "Check the integrity of all three semantic bases and fix whatever you find.",
       "expected_output": "Runs validate_semantic_base.py per base with correct --repo roots, distinguishes real drift from shorthand noise, fixes fast-tier files first, updates stamps, re-syncs deployed copies (diff -rq empty), updates parity notes in integrity.md.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 7,
       "lang": "ru",
       "prompt": "В моём репозитории Twilight-Axis проверь, как ManorPanel доставляет изображения в TGUI, и составь binding brief. Используй семантическую базу Twilight и ss13-tgui; файлы не изменяй.",
       "expected_output": "Discovers the twilight base through the workspace registry, binds it with ss13-tgui via tgui_guide.md + signal_map.md + coding_standards.md, identifies modular_twilight_axis/manors/code/manor_tgui.dm and tgui/packages/tgui/interfaces/ManorPanel.tsx, verifies /datum/asset/simple/manor + ui_assets() + resolveAsset()/asset mappings, and answers read-only with exact source paths.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 8,
       "lang": "en",
       "prompt": "In my Twilight-Axis repository check how ManorPanel delivers images to TGUI and produce a binding brief. Use the Twilight semantic base and ss13-tgui; do not modify any files.",
       "expected_output": "Discovers the twilight base through the workspace registry, binds it with ss13-tgui via tgui_guide.md + signal_map.md + coding_standards.md, identifies modular_twilight_axis/manors/code/manor_tgui.dm and tgui/packages/tgui/interfaces/ManorPanel.tsx, verifies /datum/asset/simple/manor + ui_assets() + resolveAsset()/asset mappings, and answers read-only with exact source paths.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 9,
       "lang": "ru",
       "prompt": "Нужно добавить модульную TGUI-панель торговца в мой репозиторий BandaStation-Kagelite_DEV так, чтобы она пережила следующий upstream sync. С чего начинаем и какие скиллы задействуем?",
       "expected_output": "Dispatches both architecture skills with the documented interaction order (tgstation-modular-content decides placement in modular_bandastation, ss13-tgui decides implementation), resolves the repo to its base via the Discovery protocol, and produces a binding brief.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "tgstation-modular-content",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 10,
       "lang": "en",
       "prompt": "I need to add a modular merchant TGUI panel in my BandaStation-Kagelite_DEV repository so it survives the next upstream sync. Where do we start and which skills apply?",
       "expected_output": "Dispatches both architecture skills with the documented interaction order (tgstation-modular-content decides placement in modular_bandastation, ss13-tgui decides implementation), resolves the repo to its base via the Discovery protocol, and produces a binding brief.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "tgstation-modular-content",
+        "ss13-tgui"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 11,
       "lang": "ru",
       "prompt": "Представь, что все папки ai_navigation_* удалены. Восстанови инфраструктуру для моего репозитория Rivermist-Hollow-Vanderlin.",
       "expected_output": "Does not panic-copy from memory of old bases; runs its own bootstrap (assessment -> staged build from file-specs), rebuilds, validates, registers, redeploys — demonstrating the recovery property.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 12,
       "lang": "en",
       "prompt": "Assume every ai_navigation_* folder has been deleted. Rebuild the infrastructure for my Rivermist-Hollow-Vanderlin repository.",
       "expected_output": "Does not panic-copy from memory of old bases; runs its own bootstrap (assessment -> staged build from file-specs), rebuilds, validates, registers, redeploys — demonstrating the recovery property.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 13,
       "lang": "ru",
       "prompt": "В ss13-tgui написано одно, а в ai_navigation_azure/tgui_guide.md другое про то, как регистрируется интерфейс. Кому верить?",
       "expected_output": "Applies the truth hierarchy: code first; base wins on fork-local facts, skill wins on framework invariants; routes the resolved fact to the correct layer (skill enrichment or base fix).",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 14,
       "lang": "en",
       "prompt": "ss13-tgui says one thing and ai_navigation_azure/tgui_guide.md says another about how an interface gets registered. Which one do we trust?",
       "expected_output": "Applies the truth hierarchy: code first; base wins on fork-local facts, skill wins on framework invariants; routes the resolved fact to the correct layer (skill enrichment or base fix).",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ],
+      "forbid_skills": [
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 15,
       "lang": "ru",
       "prompt": "Оптимизируй горячий proc обработки жидкостей в моём репозитории CEV-Eris — сервер лагает. Какие скиллы и в каком порядке?",
       "expected_output": "Dispatches byond-ss13-coding as the default architecture skill (performance/DM task, no tgui or modular-placement concern on a hard fork), resolves the repo's base if one exists for routing, and produces a binding brief; does not invoke ss13-tgui or tgstation-modular-content.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "byond-ss13-coding"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 16,
       "lang": "en",
       "prompt": "Optimize the hot fluid-processing proc in my CEV-Eris repository — the server is lagging. Which skills, in what order?",
       "expected_output": "Dispatches byond-ss13-coding as the default architecture skill (performance/DM task, no tgui or modular-placement concern on a hard fork), resolves the repo's base if one exists for routing, and produces a binding brief; does not invoke ss13-tgui or tgstation-modular-content.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller",
+        "byond-ss13-coding"
+      ],
+      "forbid_skills": [
+        "ss13-tgui",
+        "tgstation-modular-content",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 17,
       "lang": "ru",
       "prompt": "Надо перенести наш SS13-сервер на новую машину. Какие скиллы нужны и с чего начать?",
       "expected_output": "Takes Gate 1's first node: the work is about running a server rather than changing its code, so ss13-tgs-deploy is dispatched ALONE and routing STOPS there — no Gate 2, no semantic base (bases describe code, not hosts), and no composition with the architecture skills. Does not run the Discovery protocol, and does not offer to bootstrap a base for a hosting question.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "ss13-tgs-deploy"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "tgstation-modular-content"
+      ]
     },
     {
       "id": 18,
       "lang": "en",
       "prompt": "We need to move our SS13 server to a new machine. Which skills apply and where do we start?",
       "expected_output": "Takes Gate 1's first node: the work is about running a server rather than changing its code, so ss13-tgs-deploy is dispatched ALONE and routing STOPS there — no Gate 2, no semantic base (bases describe code, not hosts), and no composition with the architecture skills. Does not run the Discovery protocol, and does not offer to bootstrap a base for a hosting question.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "ss13-tgs-deploy"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "tgstation-modular-content"
+      ]
     },
     {
       "id": 19,
       "lang": "ru",
       "prompt": "Сервер лагает. Разберись.",
       "expected_output": "Refuses to route on the phrase 'the server lags' alone, because that symptom straddles Gate 1's ops node and its default node. Asks what the evidence points at, or states the split explicitly: host-side evidence (RAM, disk, the container, the build toolchain, asset delivery) is ss13-tgs-deploy; an expensive proc or tick budget is byond-ss13-coding with performance.md. Names the discriminating check rather than guessing a skill.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ]
     },
     {
       "id": 20,
       "lang": "en",
       "prompt": "The server is lagging. Sort it out.",
       "expected_output": "Refuses to route on the phrase 'the server lags' alone, because that symptom straddles Gate 1's ops node and its default node. Asks what the evidence points at, or states the split explicitly: host-side evidence (RAM, disk, the container, the build toolchain, asset delivery) is ss13-tgs-deploy; an expensive proc or tick budget is byond-ss13-coding with performance.md. Names the discriminating check rather than guessing a skill.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "byond-codemaster-controller"
+      ]
     },
     {
       "id": 21,
       "lang": "ru",
       "prompt": "Пока ничего не пиши — просто скажи, в какую папку на нашем форке должна лечь новая профессия.",
       "expected_output": "Takes Gate 1's placement node: the ask is purely where the change should live with no code to write yet, so tgstation-modular-content is dispatched ALONE and routing STOPS — Gate 2 is skipped because placement is already the answer rather than a prefix to someone else's implementation. Does not pull in byond-ss13-coding just because the fork is a DM codebase.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "tgstation-modular-content"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "ss13-tgs-deploy"
+      ]
     },
     {
       "id": 22,
       "lang": "en",
       "prompt": "Don't write anything yet — just tell me which folder a new job should live in on our fork.",
       "expected_output": "Takes Gate 1's placement node: the ask is purely where the change should live with no code to write yet, so tgstation-modular-content is dispatched ALONE and routing STOPS — Gate 2 is skipped because placement is already the answer rather than a prefix to someone else's implementation. Does not pull in byond-ss13-coding just because the fork is a DM codebase.",
-      "files": []
+      "files": [],
+      "expect_skills": [
+        "tgstation-modular-content"
+      ],
+      "forbid_skills": [
+        "byond-ss13-coding",
+        "ss13-tgui",
+        "ss13-tgs-deploy"
+      ]
     }
   ]
 }

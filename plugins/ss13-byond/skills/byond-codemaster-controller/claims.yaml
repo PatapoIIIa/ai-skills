@@ -1,0 +1,51 @@
+# Machine-checkable half of this skill's Discovery protocol.
+#
+# The controller makes fewer fork-facing claims than the architecture skills --
+# most of what it says is about its own routing contract, which no grep can
+# check. This file therefore stays deliberately short: it covers only the
+# assumptions the Discovery protocol actually rests on, because those are the
+# ones that decide whether a lookup finds a base or wastes a step.
+#
+# Every claim here is `scope: local` on purpose. "Do checkouts ship a base?" is
+# a question about the machine the skill is running on; pointing it at a
+# canonical upstream would answer a different question convincingly, which is
+# the trap `scope` exists to avoid.
+#
+# Repositories are identified by project file and content markers, never by a
+# path on anyone's disk -- the runner supplies paths at scan time.
+#
+# Deliberately ONE claim. Two others were drafted and removed: "an in-repo base
+# is not the common case" (2 of 5 checkouts) and "a root AGENTS.md is rare"
+# (1 of 5). Both are true and both are useful -- but they are *statistical*,
+# and this checker answers a per-checkout question, so either polarity reports
+# the minority as BROKEN forever. A permanent red that everyone learns to skip
+# is worse than no check. Those two findings live in the skill's Discovery
+# protocol as prose instead, which is where they change behaviour.
+
+skill: byond-codemaster-controller
+
+targets:
+  fork_with_in_repo_base:
+    project_file: [tgstation.dme, vanderlin.dme, roguetown.dme, colonialmarines.dme]
+    markers: [ai_navigation]
+    note: >-
+      Only the checkouts that actually ship an in-repo base. The marker is what
+      makes the claim below conditional: a checkout with no base is not a
+      counter-example to a rule about what a base must contain, and asserting it
+      with a bare paths_exist would report every base-less fork as BROKEN.
+
+claims:
+  - id: base-entry-files-are-the-contract
+    target: fork_with_in_repo_base
+    grade: verified
+    last_verified: 2026-09-01
+    scope: local
+    says: >-
+      Where an in-repo base does exist, the controller expects its entry points
+      to be AGENTS.md (guided start) and router.md (fast start); file-specs.md
+      and integrity.md both address those two by name. A base missing them is
+      not a base this skill can route through, and should be regenerated rather
+      than read.
+    check:
+      type: paths_exist
+      paths: [ai_navigation/router.md]

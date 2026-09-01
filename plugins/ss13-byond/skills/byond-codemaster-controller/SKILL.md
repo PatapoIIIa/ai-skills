@@ -39,7 +39,10 @@ Don't scan a table of prose conditions looking for the "best fit" — that's how
 
 **Gate 2 — does placement need a mergeability decision?** (only asked if Gate 1 didn't already STOP)
 
-7. Does the fork track upstream (a `modular_*`/`master_files` convention, or the base/`AGENTS.md` says so) **and** does this specific change need a genuinely new placement (a new file/interface/override), not an edit to something already sitting in its correct modular home? → prepend `tgstation-modular-content`: it decides placement and file layout **first**; whatever Gate 1 selected implements the content inside that placement.
+7. Two conditions, both required:
+   **(a) Does the fork track upstream?** Lead with the `modular_*`/`master_files` directory convention — that is the reliable detector. A semantic base or a root `AGENTS.md` may also say so, but a root `AGENTS.md` was present in only 1 of 5 checkouts measured 2026-09-01, so **its absence is not evidence either way**.
+   **(b) Does this change need a genuinely new placement** — a new file, interface or override — rather than an edit to something already sitting in its correct modular home?
+   Both yes → prepend `tgstation-modular-content`: it decides placement and file layout **first**; whatever Gate 1 selected implements the content inside that placement.
    Otherwise → Gate 1's answer stands unchanged.
 
 **This section is the single source of truth for routing.** The architecture skills each declare only their own boundary and defer here; if one of them appears to restate this table, that copy is drift — fix it there, not by forking the logic.
@@ -52,7 +55,7 @@ New architecture skills join Gate 1 as a new node in front of its **default node
 
 Given the repo (or directory) the task points at:
 
-1. **In-repo base:** does `<repo>/ai_navigation/` exist with an `AGENTS.md` or `router.md` inside? → that is the repo's base. **Check with a direct filesystem probe (`ls`/`dir`), not a search tool:** in-repo bases and fork overlays are often gitignored, and gitignore-respecting glob/grep tooling silently reports them absent (verified failure mode, 2026-07-16). Primary convention: a base lives inside its repo, because base docs self-reference as `ai_navigation/...`.
+1. **In-repo base:** does `<repo>/ai_navigation/` exist with an `AGENTS.md` or `router.md` inside? → that is the repo's base. **Check with a direct filesystem probe (`ls`/`dir`), not a search tool:** in-repo bases and fork overlays are often gitignored, and gitignore-respecting glob/grep tooling silently reports them absent (verified failure mode, 2026-07-16). Primary convention *by design*: a base lives inside its repo, because base docs self-reference as `ai_navigation/...`. **But measured across a real workspace (2026-09-01) only 2 of 5 SS13 checkouts actually shipped one**, so in practice step 1 usually misses and steps 2-3 carry the protocol. Keep the ordering — an in-repo hit is authoritative when it happens — but do not treat a miss as informative, and never conclude “no base exists” from step 1 alone.
 2. **Workspace registry:** search upward from the repo (and the working directory) for `ai_navigation_registry.md`. If found, resolve the repo through its table — it may map the repo to a base stored elsewhere (legacy/standalone layouts).
 3. **Sibling bases:** if still nothing, glob for `ai_navigation*` directories next to the repo and in the parent workspace; match by the repo facts stated in each base's `AGENTS.md`/`SKILL.md` (project file name, overlay dir) — never by folder name alone.
 4. **Nothing found:** the repo has no base. Proceed from source; offer to bootstrap (`references/bootstrap.md`). Never block the user's task on base creation.

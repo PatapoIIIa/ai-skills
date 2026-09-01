@@ -38,6 +38,17 @@ claude plugin install ss13-byond@ss13-ai-skills
 - `.github/workflows/skill-truth.yml` — weekly CI. Runs the two network-only checkers,
   refreshes the README table, and backs the badge at the top of the README.
 - `scripts/hooks/post-commit` — opt-in git hook that runs the drift check on a throttle.
+- `scripts/run_evals.py` — executes the eval sets that ship with each skill. Two modes:
+  `routing` (default, cheap) asks which skills the model would load and checks that against
+  each eval's `expect_skills`/`forbid_skills`; `full` runs the prompt and saves the transcript.
+  `--dry-run` validates the eval files and prints the plan without a single model call, which is
+  what CI and a nested shell can do. **The negative half is the point**: `forbid_skills` is what
+  catches over-triggering, since a router that loads everything passes any purely positive check.
+  Needs an authenticated `claude` CLI; an agent-run shell usually has none and it says so rather
+  than pretending.
+- `AGENTS.md` — the same brief as this file, shortened, for non-Claude agents that read that
+  convention. `CONTRIBUTING.md` — the evidence rules a change is judged on. `CHANGELOG.md` —
+  dated (not numbered, since there is no version) record of what changed for subscribers.
 
 The five skills and the one contract that binds them: `byond-codemaster-controller` routes;
 `byond-ss13-coding`, `ss13-tgui` and `tgstation-modular-content` implement on separate axes;

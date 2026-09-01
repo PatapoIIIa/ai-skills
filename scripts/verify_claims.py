@@ -207,14 +207,21 @@ def match_target(spec, checkouts):
     A target states a project file and optional required markers (relative
     paths that must exist). Folder names are a hint of last resort: `name_hint`
     only breaks ties, it never qualifies a checkout on its own.
+
+    `project_file` may be a list, which matches any one of the named files. That
+    is how a claim says "this holds for SS13 checkouts generally" rather than
+    naming one fork -- the controller's Discovery-protocol claims need it,
+    because they are about how often an assumption holds across a workspace.
     """
     project_file = spec.get("project_file")
+    wanted = ([project_file] if isinstance(project_file, str)
+              else list(project_file or []))
     markers = spec.get("markers") or []
     hint = (spec.get("name_hint") or "").lower()
 
     matches = []
     for checkout in checkouts:
-        if project_file and project_file not in checkout["project_files"]:
+        if wanted and not any(pf in checkout["project_files"] for pf in wanted):
             continue
         if not all(os.path.exists(os.path.join(checkout["path"], m)) for m in markers):
             continue
