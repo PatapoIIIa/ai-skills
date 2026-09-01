@@ -445,7 +445,8 @@ def check_hygiene(root, rep):
         if not os.path.isdir(scan_root):
             continue
         for dirpath, dirnames, filenames in os.walk(scan_root):
-            dirnames[:] = [d for d in dirnames if d != ".git"]
+            dirnames[:] = [d for d in dirnames
+                           if d not in (".git", "__pycache__", "node_modules")]
             if not dirnames and not filenames:
                 rep.warn("empty-dir", "%s is empty -- git will not track it"
                          % rel(dirpath, root))

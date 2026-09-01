@@ -27,10 +27,12 @@ targets:
 
   tg_lineage:
     project_file: tgstation.dme
+    upstream: [tgstation/tgstation, Bubberstation/Bubberstation]
     note: Forks still on tg's layout, where ui_interact is the entry proc.
 
   cmss13:
     project_file: colonialmarines.dme
+    upstream: cmss13-devs/cmss13
     note: >-
       The fork this skill singles out for using tgui_interact instead. Measured
       against its upstream on 2026-09-01 it carries no tgui-core dependency at all

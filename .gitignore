@@ -1,0 +1,11 @@
+# The maintenance scripts import each other (scripts/_fetch.py), so running any
+# of them leaves bytecode behind. Nothing here is part of the plugin payload.
+__pycache__/
+*.py[cod]
+
+# Drift-check run state and reports. Machine-local by design: which checkouts
+# exist and when they were last scanned is this machine's business, not the
+# repository's. The version *baseline* is the deliberate exception -- it lives
+# in scripts/version_baseline.json and IS committed, because its git history is
+# the record of when each upstream moved a pin.
+.git/skill-drift/

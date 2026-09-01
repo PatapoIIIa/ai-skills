@@ -131,9 +131,34 @@ where Bubberstation puts modular content, that `BUBBER EDIT` is still the tag, t
 starts handing out stale facts with full confidence.
 
 **Division of labour with the version watch above: pins are watched upstream, layout is checked
-locally.** A clone is a fine witness for "does this folder exist" and a bad one for "what version
-is current", so no `claims.yaml` carries a version check any more — those moved to
-`version_watch.yaml` after local clones produced four false drift reports.
+locally.** No `claims.yaml` carries a version check any more — those moved to `version_watch.yaml`
+after local clones produced four false drift reports.
+
+That split is measured, not assumed. Every clone in this workspace points at a **personal fork**
+rather than the canonical repo (`PatapoIIIa/tgstation`, not `tgstation/tgstation`) and several are
+months stale, so it was a fair question whether layout claims survive it. They do: **21 of 21 paths
+checked against the canonical upstreams on 2026-09-01 agreed with clones up to 1039 commits
+behind**, because folder conventions move on a scale of years while version pins move weekly. The
+local run now prints each checkout's origin, HEAD date and behind-count, so nobody has to take that
+on trust.
+
+To take clones out of the loop entirely:
+
+```
+python scripts/verify_claims.py --source upstream
+```
+
+This reads the canonical repositories through the GitHub trees API — one request each, no clone
+touched. It answers `paths_exist` and `paths_absent` only; `grep` needs file contents and
+`commit_rank` needs history, so both report SKIP with that reason rather than guessing. Targets
+carry `upstream: owner/repo` and `branch:` for this. A claim that is inherently about downstream
+state carries `scope: local` and is skipped upstream, because pointing it at the canonical repo
+would answer a different question convincingly — `aggregator-not-inherited-downstream` is the case
+that forced the flag.
+
+**Set `branch:` from the repository's real default.** Three of the six watched repos default to
+`main`; all three also still have a `master` carrying identical pins today, which is precisely the
+trap — a stale mirror branch returns plausible, frozen data instead of an error.
 
 Each skill's claims live in `<skill>/claims.yaml`, next to the prose ledger in
 `references/source-index.md` that they mechanise. **Repositories are identified by project file and

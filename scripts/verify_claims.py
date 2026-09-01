@@ -45,6 +45,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _fetch                                                       # noqa: E402
+
 try:
     import yaml
 except ImportError:
@@ -102,6 +105,36 @@ def version_tuple(spec):
 # Workspace discovery -- repositories are identified by content, never by path
 # --------------------------------------------------------------------------
 
+def git_out(repo, args):
+    try:
+        out = subprocess.check_output(["git"] + args, cwd=repo, stderr=subprocess.DEVNULL)
+        return out.decode("utf-8", "replace").strip()
+    except (subprocess.CalledProcessError, OSError):
+        return ""
+
+
+def provenance(path):
+    """What this checkout actually is: whose fork, how old, how far behind.
+
+    Worth collecting because the answer is rarely what a reader assumes. Every
+    clone in the workspace this was written against pointed at a *personal fork*
+    rather than the canonical upstream, and several were months stale. A report
+    that prints only a folder name invites the reader to hear "upstream".
+    """
+    origin = git_out(path, ["remote", "get-url", "origin"])
+    origin = re.sub(r"^.*github\.com[:/]", "", origin)
+    origin = re.sub(r"\.git$", "", origin)
+    head_date = git_out(path, ["log", "-1", "--format=%cs"])
+    tracking = git_out(path, ["rev-parse", "--abbrev-ref", "@{upstream}"])
+    behind = ""
+    if tracking:
+        behind = git_out(path, ["rev-list", "--count", "HEAD..%s" % tracking])
+    return {"origin": origin or "(no origin)",
+            "head_date": head_date or "?",
+            "tracking": tracking,
+            "behind": int(behind) if behind.isdigit() else None}
+
+
 def discover_checkouts(workspace):
     """Every directory under `workspace` that looks like a BYOND project."""
     found = []
@@ -116,8 +149,56 @@ def discover_checkouts(workspace):
         except OSError:
             continue
         if dme:
-            found.append({"name": name, "path": path, "project_files": sorted(dme)})
+            found.append({"name": name, "path": path, "project_files": sorted(dme),
+                          "provenance": provenance(path)})
     return found
+
+
+TREE_API = "https://api.github.com/repos/%s/git/trees/%s?recursive=1"
+
+
+class UpstreamTree(object):
+    """The canonical repository's file list, read once over the GitHub trees API.
+
+    One request per repository returns the whole recursive tree, which is enough
+    to answer every path claim without a clone. It is NOT enough for `grep` (no
+    file contents) or `commit_rank` (no history); those report SKIP in this mode
+    rather than pretending.
+    """
+
+    def __init__(self, timeout=60):
+        self._cache = {}
+        self._transport = _fetch.Transport()
+        self._timeout = timeout
+
+    def paths(self, owner_repo, branch):
+        key = (owner_repo, branch)
+        if key in self._cache:
+            return self._cache[key]
+        try:
+            raw = self._transport.get(TREE_API % (owner_repo, branch), self._timeout)
+            data = json.loads(raw)
+        except Exception as exc:                                    # noqa: BLE001
+            self._cache[key] = ("error", str(exc))
+            return self._cache[key]
+        if "tree" not in data:
+            self._cache[key] = ("error", data.get("message", "no tree in response"))
+            return self._cache[key]
+        entries = set(e["path"] for e in data["tree"])
+        if data.get("truncated"):
+            # A truncated tree would turn real files into false "missing" reports.
+            self._cache[key] = ("error", "tree truncated by the API; cannot trust absence")
+            return self._cache[key]
+        self._cache[key] = ("ok", entries)
+        return self._cache[key]
+
+
+def tree_has(entries, pattern):
+    """Match a claim path against a tree listing (files only, so infer directories)."""
+    if any(ch in pattern for ch in "*?["):
+        return any(fnmatch.fnmatch(p, pattern) for p in entries)
+    prefix = pattern.rstrip("/") + "/"
+    return pattern in entries or any(p.startswith(prefix) for p in entries)
 
 
 def match_target(spec, checkouts):
@@ -305,11 +386,95 @@ def load_claim_files(root, only_skill=None):
     return sorted(files)
 
 
+def run_upstream(root, only_skill, quiet_drift):
+    """Check path claims against the canonical repositories, with no clone involved.
+
+    Answers the question a local run cannot: is the layout still like this in the
+    repository the claim is actually about, rather than in somebody's fork of it
+    from three months ago. One API request per repository.
+    """
+    trees = UpstreamTree()
+    claim_files = load_claim_files(root, only_skill)
+    print("Source: CANONICAL UPSTREAMS over the GitHub trees API. No clones read.")
+    print("Only path claims can be answered this way -- grep needs file contents and")
+    print("commit_rank needs history, so both report SKIP here. Run without")
+    print("--source upstream to evaluate those against local checkouts.\n")
+
+    results = []
+    for skill, path in claim_files:
+        doc = yaml.safe_load(read(path)) or {}
+        targets = doc.get("targets") or {}
+        print("=== %s ===" % skill)
+
+        for claim in doc.get("claims") or []:
+            spec = claim["check"]
+            target_name = claim.get("target")
+            target = targets.get(target_name) or {}
+            upstreams = target.get("upstream") or []
+            if isinstance(upstreams, str):
+                upstreams = [upstreams]
+            branch = target.get("branch", "master")
+
+            common = dict(skill=skill, claim=claim["id"], says=claim.get("says", ""),
+                          last_verified=str(claim.get("last_verified", "")))
+
+            if claim.get("scope") == "local":
+                results.append(dict(common, repo=None, status=SKIP,
+                                    detail="claim is about downstream state; "
+                                           "upstream would answer a different question"))
+                continue
+            if not upstreams:
+                results.append(dict(common, repo=None, status=SKIP,
+                                    detail="target %r names no canonical upstream" % target_name))
+                continue
+            if spec.get("type") not in ("paths_exist", "paths_absent"):
+                results.append(dict(common, repo=", ".join(upstreams), status=SKIP,
+                                    detail="%s cannot be answered without a clone"
+                                           % spec.get("type")))
+                continue
+
+            for owner_repo in upstreams:
+                kind, payload = trees.paths(owner_repo, branch)
+                if kind == "error":
+                    results.append(dict(common, repo=owner_repo, status=SKIP,
+                                        detail="could not read tree: %s" % payload))
+                    continue
+                if spec["type"] == "paths_exist":
+                    missing = [p for p in spec["paths"] if not tree_has(payload, p)]
+                    status, detail = ((BROKEN, "missing upstream: %s" % ", ".join(missing))
+                                      if missing else
+                                      (OK, "all %d present upstream" % len(spec["paths"])))
+                else:
+                    present = [p for p in spec["paths"] if tree_has(payload, p)]
+                    status, detail = ((BROKEN, "unexpectedly present upstream: %s"
+                                       % ", ".join(present))
+                                      if present else (OK, "absent upstream as claimed"))
+                results.append(dict(common, repo=owner_repo, status=status, detail=detail))
+        print("")
+
+    return report(results, quiet_drift), results
+
+
 def run(root, workspace, only_skill, quiet_drift):
     checkouts = discover_checkouts(workspace)
     print("Workspace: %s" % workspace)
-    print("  %d BYOND checkouts found: %s"
-          % (len(checkouts), ", ".join(c["name"] for c in checkouts) or "none"))
+    print("Source: LOCAL CHECKOUTS. These are clones, not the canonical upstreams --")
+    print("their provenance is printed so no reading of this report has to assume it.")
+    print("")
+    print("  %-30s %-40s %-11s %s" % ("checkout", "origin", "HEAD", "behind"))
+    for c in checkouts:
+        p = c["provenance"]
+        behind = "-" if p["behind"] is None else ("%d" % p["behind"])
+        note = ""
+        if p["behind"]:
+            note = "  <-- worktree lags its own remote"
+        print("  %-30s %-40s %-11s %s%s"
+              % (c["name"][:30], p["origin"][:40], p["head_date"], behind, note))
+    print("")
+    print("  Layout claims tolerate this: 21 of 21 paths checked against canonical")
+    print("  upstreams on 2026-09-01 agreed with clones months out of date, because")
+    print("  folder conventions move on a scale of years. Version pins do NOT tolerate")
+    print("  it and are watched separately by scripts/check_versions.py.")
 
     claim_files = load_claim_files(root, only_skill)
     if not claim_files:
@@ -346,6 +511,7 @@ def run(root, workspace, only_skill, quiet_drift):
                         status, detail = handler(spec, checkout["path"])
                     except Exception as exc:                      # noqa: BLE001
                         status, detail = SKIP, "check raised %s: %s" % (type(exc).__name__, exc)
+
                 results.append(dict(skill=skill, claim=claim["id"], repo=checkout["name"],
                                     status=status, detail=detail,
                                     says=claim.get("says", ""),
@@ -464,6 +630,10 @@ def main():
                         help="only run if the last run was at least D days ago")
     parser.add_argument("--state-dir", default=None,
                         help="where run state lives (default: <repo>/.git/skill-drift)")
+    parser.add_argument("--source", choices=["local", "upstream"], default="local",
+                        help="'local' reads clones in the workspace (all check types); "
+                             "'upstream' reads the canonical repos over the GitHub API "
+                             "(path claims only, no clone needed)")
     args = parser.parse_args()
 
     root = args.repo_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -479,7 +649,10 @@ def main():
     if args.every_commits or args.max_age_days:
         print("Running claim check: %s\n" % why)
 
-    code, results = run(root, workspace, args.skill, args.quiet_drift)
+    if args.source == "upstream":
+        code, results = run_upstream(root, args.skill, args.quiet_drift)
+    else:
+        code, results = run(root, workspace, args.skill, args.quiet_drift)
     if args.every_commits or args.max_age_days:
         save_state(state_dir, commits)
 

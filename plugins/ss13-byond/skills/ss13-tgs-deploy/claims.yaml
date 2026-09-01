@@ -19,6 +19,8 @@ targets:
 
   vanderlin_family:
     project_file: vanderlin.dme
+    upstream: Monkestation/Vanderlin
+    branch: main
     note: >-
       Closest available relative of the fork this skill was written from. The
       original deployment target is not checked out here, so its exact pins cannot
@@ -27,6 +29,7 @@ targets:
   tg_upstream:
     project_file: tgstation.dme
     name_hint: tgstation
+    upstream: tgstation/tgstation
     note: >-
       Upstream, where the family's build conventions are set. Hard claims about the
       toolchain are scoped here so an old fork lagging behind does not register as

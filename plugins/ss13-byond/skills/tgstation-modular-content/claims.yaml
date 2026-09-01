@@ -13,20 +13,26 @@ targets:
   bubberstation:
     project_file: tgstation.dme
     markers: [modular_zubbers]
+    upstream: Bubberstation/Bubberstation
     note: The focus fork. Everything here was confirmed on 2026-09-01.
 
   cmss13:
     project_file: colonialmarines.dme
+    upstream: cmss13-devs/cmss13
     note: The counter-example -- a heavy fork with no modular convention at all.
 
   vanderlin_family:
     project_file: vanderlin.dme
+    upstream: Monkestation/Vanderlin
+    branch: main
     note: >-
       Downstream of the codebase the aggregator pattern comes from. Used to test
       whether that pattern is inherited. It is not.
 
   roguetown_family:
     project_file: roguetown.dme
+    upstream: [Rotwood-Vale/Ratwood-2.0, Azure-Peak/Azure-Peak]
+    branch: main
     note: >-
       Roguetown/Azure-Peak lineage, where modular roots accumulate across
       generations. Several checkouts usually match; the ranking claim is run
@@ -149,6 +155,11 @@ claims:
     target: vanderlin_family
     grade: verified
     last_verified: 2026-09-01
+    # This claim is about what DOWNSTREAM forks inherit, so it can only be
+    # answered by a downstream clone. Pointed at the canonical upstream it would
+    # silently test a different proposition -- "does upstream have an aggregator"
+    # -- and answer the wrong question convincingly.
+    scope: local
     says: >-
       A downstream fork of an aggregator codebase does not inherit the aggregator --
       no _module.dm exists, so step 4 must grep the .dme rather than assume a mechanism.

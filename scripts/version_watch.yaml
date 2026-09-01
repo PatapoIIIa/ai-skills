@@ -20,6 +20,10 @@ fetch:
   base_url: https://raw.githubusercontent.com
   timeout_seconds: 20
 
+# `branch` is each repository's real default branch, checked against the GitHub API
+# on 2026-09-01. Three of these default to `main`; their `master` branches still
+# existed and still carried identical pins, which is exactly why assuming `master`
+# is dangerous -- a stale mirror branch reports plausible, wrong, frozen data.
 repos:
   - id: tgstation
     owner_repo: tgstation/tgstation
@@ -28,19 +32,19 @@ repos:
 
   - id: ratwood
     owner_repo: Rotwood-Vale/Ratwood-2.0
-    branch: master
+    branch: main
     note: Roguetown lineage.
 
   - id: vanderlin
     owner_repo: Monkestation/Vanderlin
-    branch: master
+    branch: main
     note: >-
       The upstream ss13-tgs-deploy's recorded deployment numbers come from.
       Its pins are the ones that claim should be checked against.
 
   - id: azure_peak
     owner_repo: Azure-Peak/Azure-Peak
-    branch: master
+    branch: main
     note: Roguetown/Azure-Peak lineage.
 
   - id: bubberstation

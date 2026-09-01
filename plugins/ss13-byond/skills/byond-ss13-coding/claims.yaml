@@ -16,12 +16,14 @@ targets:
   tg_upstream:
     project_file: tgstation.dme
     name_hint: tgstation
+    upstream: tgstation/tgstation
     note: >-
       Upstream itself. The name hint separates it from the forks that share its
       project file; a fork keeping the same layout is not evidence about upstream.
 
   tg_family:
     project_file: tgstation.dme
+    upstream: [tgstation/tgstation, Bubberstation/Bubberstation]
     note: Upstream and every fork that still tracks its directory layout.
 
 claims:
