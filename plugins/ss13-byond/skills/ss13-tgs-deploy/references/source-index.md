@@ -31,8 +31,8 @@ What that means for trust: the *failure modes* generalize well (they are propert
 | BYOND 516 renders tgui in a webview on origin `http://127.0.0.1:<random port>`, making every CDN asset request cross-origin | `[reasoned]` | The blank-window symptom and the CORS fix are `[field]`; the origin mechanism is the account that explains them |
 | Without CORS headers the browser downloads assets and discards them, and tgui retries forever | `[field]` | Observed as "traffic looks healthy, nothing renders" |
 | `systemctl reload nginx` did not apply changed `add_header` directives; `restart` did | `[field]` | Seen on that host. Reported as what happened, not as documented nginx behaviour |
-| `.tgs.yml` claimed BYOND 515.1639 while 516.1661 was actually required; `dependencies.sh` is the source of truth | `[field]` | Version numbers are Vibelin-on-that-date. The *rule* — prefer `dependencies.sh` — is the transferable part |
-| rust-g 6.1.0, and Bun pinned by `BUN_VERSION` | `[source]` | Read from that repo's `dependencies.sh`. Always re-read it; never carry these forward |
+| `.tgs.yml` claimed BYOND 515.1639 while 516.1661 was actually required; `dependencies.sh` is the source of truth | `[field]`, re-confirmed 2026-09-01 | The *rule* — prefer `dependencies.sh` — is the transferable part. The number also still holds: the upstream this deployment descends from (Monkestation/Vanderlin) pins `BYOND_MINOR=1661` on master today |
+| rust-g 6.1.0, and Bun pinned by `BUN_VERSION` | `[source]`, re-confirmed 2026-09-01 | Read from that repo's `dependencies.sh` and **re-read from upstream master on 2026-09-01: still 6.1.0.** Do not read this as "the number is stable" — read it as "check it", which `scripts/version_watch.yaml` now does automatically |
 | Asset config keys are validated in `code/modules/asset_cache/asset_configs.dm` and `transport/webroot.dm`, falling back to the BYOND transport on a bad config | `[source]` | Cited by path from the fork's own tree; **not re-verified since, and not checked against tgstation master.** Grep before relying on the fallback behaviour |
 | `Game/Live/` is replaced every deploy; `Configuration/GameStaticFiles/` is linked into each new deploy | `[field]` | The config-vanishes trap was hit directly |
 | TGS default credentials `Admin` / `ISolemlySwearToDeleteTheDataDirectory` | `[source]` | tgstation-server's documented default. Public knowledge, which is exactly why the skill insists on changing it |
@@ -52,3 +52,15 @@ What that means for trust: the *failure modes* generalize well (they are propert
 ## Keeping this file honest
 
 When a claim here is re-tested on a new deployment, add the date and the outcome rather than editing the original line away — a claim that held twice, on different hosts, is worth more than a claim that was silently rewritten. When a version pin is found stale, delete the number and keep the rule.
+
+## Machine-checkable half
+
+Two mechanisms, split by what they can honestly answer.
+
+**Version pins → `scripts/version_watch.yaml`**, which reads `dependencies.sh` and `tgui/packages/tgui/package.json` from the canonical upstreams over HTTPS. This skill's numbers belong to the Vanderlin lineage, so they are watched against Monkestation/Vanderlin — the repository they actually came from.
+
+That distinction is not pedantry. Checking `RUST_G_VERSION` against a *downstream* Vanderlin-family clone on this machine reported the skill as drifted (3.9.0 versus the recorded 6.1.0) when nothing had drifted at all: upstream still pins 6.1.0, and the fork simply lags behind it. A version claim has to be checked against the repository the claim is about.
+
+**Layout and convention claims → `../claims.yaml`**, run by `scripts/verify_claims.py` against local checkouts, where a clone is a perfectly good witness for "does this folder exist".
+
+A claim reported as **DRIFT** by either has not been disproved — its evidence has expired and needs re-reading against what is there now. Update `last_verified` and the dates here in the same pass.

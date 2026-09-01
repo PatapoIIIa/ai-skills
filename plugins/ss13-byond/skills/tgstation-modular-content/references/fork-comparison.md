@@ -11,8 +11,13 @@ Static comparison of /tg/-lineage codebases to separate **universal modular rule
 | Override folder | `master_files/` mirrors upstream path | Organized by **theme** (`erp/`, `dun_world/`, `races/`), not path-mirrored | n/a |
 | Include mechanism | Flat `#include` list in main `.dme` (`BEGIN/END_INCLUDE`) | **One** line in `.dme` → `_module.dm` aggregator → nested `_xxx.dm` sub-aggregators | Flat `#include` list in `.dme` (`BEGIN_INCLUDE`) |
 | tgui entry proc | `ui_interact` | `ui_interact` | `tgui_interact` |
+| tgui framework (upstream pins, 2026-09-01) | `tgui-core ^6.1.1`, react 19 | `tgui-core ^5.6.0`, react 19 | **no `tgui-core` at all**, react 18 |
 | Upstream-edit tagging | `BUBBER EDIT` / `SKYRAT EDIT` | module `upstream_fixes.dm` overrides + tags | n/a (whole tree is fork-owned) |
 | Modular maps | Automapper (TOML + templates) | Map *import pipeline* (generated `.dmm` from upstream source) | Direct map ownership |
+
+**How far a heavy fork drifts, measured from upstream pins (2026-09-01, `scripts/version_watch.yaml`).** cmss13 has not merely diverged in folder layout — it is on a different frontend generation. It carries **no `tgui-core` dependency whatsoever** and sits on react 18 while every other fork measured is on react 19 with `tgui-core` pinned. Its `RUST_G_VERSION` meanwhile runs *ahead* of upstream /tg/ (7.0.0 against 6.2.0). Read that as the concrete shape of "hard fork, effectively its own codebase": patterns do not travel to it in either direction, and a tgui recipe written against `tgui-core` has no landing site there at all.
+
+The family's spread on that date, for calibration — rust-g 3.9.0 / 6.1.0 / 6.2.0 / 7.0.0 and one fork pinned to `master`; `tgui-core` ^4.2.3 / ^5.6.0 / ^6.1.1. **There is no single "current" version of anything in this family.** Never carry a version from one fork's guide into another; read the target's own `dependencies.sh` and `tgui/packages/tgui/package.json`.
 
 ## Universal (put in the general skill)
 

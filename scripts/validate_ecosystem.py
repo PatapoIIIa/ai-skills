@@ -46,7 +46,7 @@ NUMBER_WORDS = {
 # drive-letter pattern. The lookbehind is what excludes "config:/" -- a real
 # drive letter is never preceded by another word character.
 URL_RE = re.compile(r"\b[a-z][a-z0-9+.-]*://\S+", re.I)
-MACHINE_PATH_RE = re.compile(r"(?<!\w)[A-Za-z]:[\\/]|/home/[a-z]|/Users/")
+MACHINE_PATH_RE = re.compile(r"(?<!\w)[A-Za-z]:[\\/]|/home/[a-z]|/Users/")  # allow-machine-path
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 
 DESC_HARD_LIMIT = 1024
@@ -379,9 +379,68 @@ def check_tooling_symmetry(root, skills, rep):
             rep.ok("evals", "%s %d balanced pairs" % (name, langs.get("en", 0)))
 
 
+KNOWN_CHECK_TYPES = ("paths_exist", "paths_absent", "grep", "pin", "commit_rank")
+
+
+def check_claims_files(root, skills, rep):
+    """A malformed claims.yaml does not fail loudly -- it silently stops checking.
+
+    A claim naming a target that does not exist reports SKIP ("no checkout for
+    target"), which is indistinguishable from "you don't have that repo cloned".
+    That is the exact silent no-op the drift workflow exists to prevent, so it is
+    caught here instead.
+    """
+    for name, path in sorted(skills.items()):
+        claims_path = os.path.join(path, "claims.yaml")
+        if not os.path.isfile(claims_path):
+            continue
+        try:
+            doc = yaml.safe_load(read(claims_path)) or {}
+        except yaml.YAMLError as exc:
+            rep.error("claims", "%s: claims.yaml does not parse (%s)" % (name, exc))
+            continue
+
+        if doc.get("skill") != name:
+            rep.error("claims", "%s: claims.yaml declares skill %r" % (name, doc.get("skill")))
+
+        targets = doc.get("targets") or {}
+        if not targets:
+            rep.error("claims", "%s: claims.yaml defines no targets" % name)
+
+        seen = set()
+        claims = doc.get("claims") or []
+        if not claims:
+            rep.error("claims", "%s: claims.yaml defines no claims" % name)
+        for claim in claims:
+            cid = claim.get("id")
+            if not cid:
+                rep.error("claims", "%s: a claim has no id" % name)
+                continue
+            if cid in seen:
+                rep.error("claims", "%s: duplicate claim id %r" % (name, cid))
+            seen.add(cid)
+
+            if claim.get("target") not in targets:
+                rep.error("claims",
+                          "%s/%s: target %r is not defined -- the claim would silently never run"
+                          % (name, cid, claim.get("target")))
+            if not claim.get("says"):
+                rep.error("claims", "%s/%s: no 'says' text, so a report cannot explain itself"
+                          % (name, cid))
+            spec = claim.get("check") or {}
+            if spec.get("type") not in KNOWN_CHECK_TYPES:
+                rep.error("claims", "%s/%s: unknown check type %r"
+                          % (name, cid, spec.get("type")))
+        rep.ok("claims", "%s %d claims over %d targets" % (name, len(claims), len(targets)))
+
+
 def check_hygiene(root, rep):
     """No machine paths, no CRLF, no empty directories in what ships."""
-    scan_roots = [os.path.join(root, "plugins"), os.path.join(root, "docs")]
+    # scripts/ is in scope for CRLF above all: scripts/hooks/* are shell scripts
+    # without a .sh extension, and a CRLF shebang makes them fail silently.
+    scan_roots = [os.path.join(root, "plugins"),
+                  os.path.join(root, "docs"),
+                  os.path.join(root, "scripts")]
     for scan_root in scan_roots:
         if not os.path.isdir(scan_root):
             continue
@@ -402,6 +461,10 @@ def check_hygiene(root, rep):
                 except UnicodeDecodeError:
                     continue
                 for line_no, line in enumerate(text.splitlines(), 1):
+                    # A line may opt out -- the checker's own pattern definition
+                    # necessarily contains what the checker looks for.
+                    if "allow-machine-path" in line:
+                        continue
                     if MACHINE_PATH_RE.search(URL_RE.sub("", line)):
                         rep.error("machine-path",
                                   "%s:%d looks like a machine-specific path: %s"
@@ -444,6 +507,7 @@ def main():
     check_links(root, skills, rep)
     check_orphans(root, skills, rep)
     check_tooling_symmetry(root, skills, rep)
+    check_claims_files(root, skills, rep)
     check_hygiene(root, rep)
 
     return rep.summary()

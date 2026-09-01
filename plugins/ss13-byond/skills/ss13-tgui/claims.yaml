@@ -1,0 +1,91 @@
+# Machine-checkable half of references/source-corpus.md.
+#
+# This skill's sharpest claims are version-scoped: "verified present in
+# tgui-core 5.6.0", "byte-identical in 5.6.0 and 6.1.1". Those are exactly the
+# claims that expire without anything failing -- a fork bumps tgui-core and the
+# skill keeps asserting behaviour it read two majors ago.
+#
+# DRIFT here is the expected outcome on any fork pinned outside the verified
+# set. It is not a defect in the fork; it means the claim needs re-reading
+# against that version before it is quoted at someone.
+#
+# Note for anyone extending this file: no fork in the surveyed set vendors
+# tgui-core in-tree -- every one of them pins it and the code lands in
+# node_modules. Do not write checks that grep for tgui-core internals in the
+# repo; they will report absence that is really just an uninstalled dependency.
+
+skill: ss13-tgui
+
+targets:
+  any_tgui_fork:
+    markers: [tgui/packages/tgui/package.json]
+    note: >-
+      Every checkout that ships an in-tree tgui. Matched broadly on purpose: the
+      point is to see the spread of tgui-core versions in the wild, not to check
+      one repo. Forks predating the tgui-core split simply do not pin it and are
+      skipped rather than failed.
+
+  tg_lineage:
+    project_file: tgstation.dme
+    note: Forks still on tg's layout, where ui_interact is the entry proc.
+
+  cmss13:
+    project_file: colonialmarines.dme
+    note: >-
+      The fork this skill singles out for using tgui_interact instead. Measured
+      against its upstream on 2026-09-01 it carries no tgui-core dependency at all
+      and sits on react 18 while the rest of the family is on react 19 -- so any
+      guidance here phrased in terms of tgui-core components simply does not apply
+      to it. Check before recommending one.
+
+claims:
+  # The tgui-core version is NOT checked here. scripts/version_watch.yaml reads it
+  # from the canonical upstreams over HTTPS instead.
+  #
+  # Reading it from local checkouts produced four DRIFT rows on 2026-09-01 that
+  # said more about the age of the clones than about tgui-core: the tgstation
+  # working tree was 1039 commits behind its own origin/master at the time. A
+  # version watch that reports how stale your clones are is not a version watch.
+
+  - id: tg-lineage-entry-proc-is-ui-interact
+    target: tg_lineage
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      On tg-lineage forks the tgui entry proc is ui_interact, which is why the backend
+      pattern and review checklist name it first.
+    check:
+      type: grep
+      pattern: "ui_interact"
+      path: code
+      files: ["*.dm"]
+      min_count: 50
+
+  - id: cmss13-entry-proc-is-tgui-interact
+    target: cmss13
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      cmss13 uses tgui_interact rather than ui_interact -- the concrete case behind
+      "confirm local proc conventions before assuming tg idioms".
+    check:
+      type: grep
+      pattern: "tgui_interact"
+      path: code
+      files: ["*.dm"]
+      min_count: 10
+
+  - id: asset-helper-still-named-resolveasset
+    target: tg_lineage
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      Transport-neutral asset delivery goes through resolveAsset() in fork interface code.
+      BROKEN means the helper was renamed and every asset instruction in this skill is
+      quoting a dead identifier.
+    check:
+      type: grep
+      pattern: "resolveAsset"
+      path: tgui/packages/tgui
+      files: ["*.tsx", "*.ts"]
+      min_count: 1

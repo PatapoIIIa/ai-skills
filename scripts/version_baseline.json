@@ -1,0 +1,78 @@
+{
+  "generated": "2026-09-01",
+  "note": "Written by scripts/check_versions.py --update. Committed on purpose: its git history is the record of when each upstream moved a pin.",
+  "repos": {
+    "azure_peak": {
+      "AUXLUA_VERSION": "1.4.4",
+      "BUN_VERSION": "1.3.14",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1687",
+      "CUTTER_VERSION": "v3.1.0",
+      "PYTHON_VERSION": "3.9.0",
+      "RUST_G_VERSION": "3.9.0",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^19.2.8",
+      "tgui-core": "^6.1.1"
+    },
+    "bubberstation": {
+      "BUN_VERSION": "1.3.5",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1659",
+      "CUTTER_VERSION": "v5.0.1",
+      "DREAMLUAU_VERSION": "0.1.2",
+      "PYTHON_VERSION": "3.11.0",
+      "RUST_G_VERSION": "6.2.0",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^19.1.0",
+      "tgui-core": "^6.1.1"
+    },
+    "cmss13": {
+      "BUN_VERSION": "1.3.5",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1687",
+      "NODE_VERSION_LTS": "22.14.0",
+      "PYTHON_VERSION": "3.11.9",
+      "RUST_G_VERSION": "7.0.0",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^18.3.1"
+    },
+    "ratwood": {
+      "AUXLUA_VERSION": "1.4.4",
+      "BUN_VERSION": "1.2.16",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1673",
+      "CUTTER_VERSION": "v3.1.0",
+      "NODE_VERSION_LTS": "22.11.0",
+      "PYTHON_VERSION": "3.11.0",
+      "RUST_G_VERSION": "master",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^19.1.0",
+      "tgui-core": "^4.2.3"
+    },
+    "tgstation": {
+      "BUN_VERSION": "1.3.5",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1685",
+      "CUTTER_VERSION": "v5.0.1",
+      "DREAMLUAU_VERSION": "0.1.2",
+      "PYTHON_VERSION": "3.11.0",
+      "RUST_G_VERSION": "6.2.0",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^19.1.0",
+      "tgui-core": "^6.1.1"
+    },
+    "vanderlin": {
+      "AUXLUA_VERSION": "1.4.4",
+      "BUN_VERSION": "1.3.5",
+      "BYOND_MAJOR": "516",
+      "BYOND_MINOR": "1661",
+      "CUTTER_VERSION": "v3.1.0",
+      "NODE_VERSION_LTS": "22.11.0",
+      "PYTHON_VERSION": "3.10.0",
+      "RUST_G_VERSION": "6.1.0",
+      "SPACEMAN_DMM_VERSION": "suite-1.11",
+      "react": "^19.1.0",
+      "tgui-core": "^5.6.0"
+    }
+  }
+}

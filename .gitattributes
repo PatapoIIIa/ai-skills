@@ -21,6 +21,12 @@
 # debug from a deploy log. This line is the whole defence.
 *.sh text eol=lf
 
+# Git hooks are shell scripts without a .sh extension, so the rule above does not
+# name them. Same failure as the shipped deploy scripts: a CRLF after the shebang
+# makes the kernel look for an interpreter called "sh\r". The hook then silently
+# does nothing on every commit, which is a defect that reports itself as silence.
+scripts/hooks/* text eol=lf
+
 # Binaries: never line-end converted, never diffed as text. `text=auto` usually
 # detects these, but detection is content-based and an odd header can fool it.
 *.png binary

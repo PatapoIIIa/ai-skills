@@ -1,0 +1,173 @@
+# Machine-checkable half of references/source-index.md.
+#
+# Every folder name, tag and mechanism this skill names is a claim about a fork
+# that can silently stop being true. `scripts/verify_claims.py` runs these
+# against whatever checkouts are on the machine and reports OK / DRIFT / BROKEN.
+#
+# Repositories are identified by project file and content markers, never by a
+# path on anyone's disk -- the runner supplies paths at scan time.
+
+skill: tgstation-modular-content
+
+targets:
+  bubberstation:
+    project_file: tgstation.dme
+    markers: [modular_zubbers]
+    note: The focus fork. Everything here was confirmed on 2026-09-01.
+
+  cmss13:
+    project_file: colonialmarines.dme
+    note: The counter-example -- a heavy fork with no modular convention at all.
+
+  vanderlin_family:
+    project_file: vanderlin.dme
+    note: >-
+      Downstream of the codebase the aggregator pattern comes from. Used to test
+      whether that pattern is inherited. It is not.
+
+  roguetown_family:
+    project_file: roguetown.dme
+    note: >-
+      Roguetown/Azure-Peak lineage, where modular roots accumulate across
+      generations. Several checkouts usually match; the ranking claim is run
+      against each of them.
+
+claims:
+  # ---------------------------------------------------------------- Bubberstation
+  - id: bubber-modular-roots
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: Bubberstation keeps modular content in modular_skyrat/ and modular_zubbers/
+    check:
+      type: paths_exist
+      paths: [modular_skyrat, modular_zubbers]
+
+  - id: bubber-master-files-mirrors-upstream
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: Overrides of upstream types live in master_files/, mirroring the upstream code/ path
+    check:
+      type: paths_exist
+      paths: [modular_zubbers/master_files/code, modular_zubbers/master_files/icons]
+
+  - id: bubber-modules-folder
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: Net-new content lives in self-contained modules/<feature>/ folders
+    check:
+      type: paths_exist
+      paths: [modular_zubbers/modules]
+
+  - id: bubber-fork-handbook
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: The fork's own modular handbook is modular_zubbers/readme.md and outranks this skill
+    check:
+      type: paths_exist
+      paths: [modular_zubbers/readme.md]
+
+  - id: bubber-include-markers
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: New .dm files are included between // BEGIN_INCLUDE and // END_INCLUDE in the main .dme
+    check:
+      type: grep
+      pattern: "BEGIN_INCLUDE|END_INCLUDE"
+      files: ["*.dme"]
+      min_count: 2
+
+  - id: bubber-late-loading-defines
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: Modular defines go in code/__DEFINES/~~bubber_defines/, the ~~ sorting it last
+    check:
+      type: paths_exist
+      paths: ["code/__DEFINES/~~bubber_defines"]
+
+  - id: bubber-automapper-config
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: Map edits go through an automapper TOML config rather than editing upstream .dmm
+    check:
+      type: paths_exist
+      paths: ["_maps/*/automapper/automapper_config.toml"]
+
+  - id: bubber-tgui-file-marker
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: A new fork tgui interface carries the first-line marker "THIS IS A BUBBER UI FILE"
+    check:
+      type: grep
+      pattern: "THIS IS A BUBBER UI FILE"
+      path: tgui/packages/tgui/interfaces
+      files: ["*.tsx"]
+      min_count: 1
+
+  - id: bubber-edit-tag-grammar
+    target: bubberstation
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      Unavoidable upstream edits are tagged BUBBER EDIT / SKYRAT EDIT (1351 and 1845
+      occurrences under code/ on the verification date)
+    check:
+      type: grep
+      pattern: "BUBBER EDIT|SKYRAT EDIT"
+      path: code
+      files: ["*.dm"]
+      min_count: 500
+
+  # ---------------------------------------------------------------------- cmss13
+  - id: cmss13-pragma-safety-net
+    target: cmss13
+    grade: verified
+    last_verified: 2026-09-01
+    says: cmss13 ships code/__pragmas.dm, turning lint categories into hard compile errors
+    check:
+      type: paths_exist
+      paths: ["code/__pragmas.dm"]
+
+  - id: cmss13-has-no-modular-root
+    target: cmss13
+    grade: verified
+    last_verified: 2026-09-01
+    says: cmss13 is a heavy fork with no modular root -- it edits code/ directly
+    check:
+      type: paths_absent
+      paths: ["modular_*", "master_files"]
+
+  # ------------------------------------------------------- the aggregator question
+  - id: aggregator-not-inherited-downstream
+    target: vanderlin_family
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      A downstream fork of an aggregator codebase does not inherit the aggregator --
+      no _module.dm exists, so step 4 must grep the .dme rather than assume a mechanism.
+      If this ever turns BROKEN, an aggregator has appeared and fork-comparison.md's
+      rarity warning needs revisiting.
+    check:
+      type: paths_absent
+      paths: ["_module.dm", "modular_*/_module.dm"]
+
+  # ------------------------------------------------- the active-root heuristic
+  - id: active-root-is-rankable-by-commits
+    target: roguetown_family
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      Where several modular roots have accumulated, commit count separates the live one
+      from the fossils by a wide margin (3305 / 743 / 2 when measured). DRIFT here means
+      the ranking is inconclusive on some fork and step 1 needs a fallback.
+    check:
+      type: commit_rank
+      glob: "modular*"
+      min_ratio: 2

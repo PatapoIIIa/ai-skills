@@ -107,3 +107,7 @@ Twilight-Axis spot-check (July 2026, not part of the original corpus table) supp
 - **Caching shared immutable static data globally is acceptable; per-user dynamic data is not.** In the reviewed redesign, a same-for-everyone metadata payload cache survived while a per-user dynamic cache and generation counter were removed. The dividing line: is the cached value identical for all users and effectively immutable? Then a global cache is fine. Verify the value really is shared and immutable before trusting one.
 - **Sending a sanitized spritesheet CSS-class string from the backend** sits on the data/presentation boundary: the class is the asset-pipeline handle for a sprite, not arbitrary styling. Acceptable when it mirrors the spritesheet key; reconsider if it encodes layout. Verify against how sibling interfaces reference spritesheet sprites.
 - Whether a given interface *needs* the static/dynamic split: depends on payload size. Don't add it reflexively to a small UI.
+
+## Machine-checkable half
+
+The claims on this page that can be tested against a checkout are encoded in `../claims.yaml` and run by `scripts/verify_claims.py` in the skills repository (weekly, or every 10 commits). A claim reported as **DRIFT** there has not been disproved — its evidence has expired, and it needs re-reading against the version that is now in the tree before being quoted at anyone. Update `last_verified` in the YAML and the dates here in the same pass.

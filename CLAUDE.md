@@ -27,6 +27,12 @@ claude plugin install ss13-byond@ss13-ai-skills
 - `docs/` — bilingual user guides and benchmark tables. `README.md` — the public face.
 - `scripts/validate_ecosystem.py` — repo-maintenance only, deliberately **outside** `plugins/` so
   subscribers never receive it. Checks the invariants below mechanically.
+- `scripts/check_versions.py` + `scripts/version_watch.yaml` + `scripts/version_baseline.json` —
+  the upstream version watch. Reads pins over HTTPS from the canonical repos, never from clones.
+- `scripts/verify_claims.py` + `plugins/*/skills/*/claims.yaml` — the claim-drift workflow. The
+  YAML ships with each skill (path-free, so a subscriber can run it too); the runner is
+  maintenance-only. See *Claim drift* below.
+- `scripts/hooks/post-commit` — opt-in git hook that runs the drift check on a throttle.
 
 The five skills and the one contract that binds them: `byond-codemaster-controller` routes;
 `byond-ss13-coding`, `ss13-tgui` and `tgstation-modular-content` implement on separate axes;
@@ -77,6 +83,110 @@ chars still loads, but it has no room left for a new trigger word.
 
 Touch #1 is the only one the script cannot check: it has no opinion about whether the SKILL.md body
 is any good.
+
+## Version watch — the pins the skills quote
+
+The skills quote versions: *"verified present in tgui-core 5.6.0"*, *"built rust-g 6.1.0"*,
+*"needed BYOND 516.1661"*. `scripts/check_versions.py` reads a short list of files straight from
+the canonical upstreams over HTTPS and diffs the pins against a committed baseline.
+
+```
+python scripts/check_versions.py            # what moved
+python scripts/check_versions.py --update   # accept current as the new baseline
+```
+
+- `scripts/version_watch.yaml` — which repos, which files, which keys, and which skill claim each
+  key backs. Six upstreams: `tgstation/tgstation`, `Bubberstation/Bubberstation`,
+  `cmss13-devs/cmss13`, `Monkestation/Vanderlin`, `Rotwood-Vale/Ratwood-2.0`,
+  `Azure-Peak/Azure-Peak`; files `dependencies.sh` and `tgui/packages/tgui/package.json`.
+- `scripts/version_baseline.json` — machine-written, **committed on purpose**: `git log -p` on it
+  is the record of when each project moved a pin.
+
+Outcomes are `MOVED`, `NEW`, `GONE` (tgstation deleted `NODE_VERSION_LTS`, so keys really do
+vanish) and `SAME`. When a moved key backs a claim, the report names the claim that now needs
+re-reading — and stays quiet when the new value is still inside the claim's `verified_at` set.
+
+**Read upstream, never a local clone. This is the whole point of the file.** Measured 2026-09-01,
+the `tgstation` working tree on this machine was **1039 commits behind its own `origin/master`**
+and still reported `BYOND_MINOR=1659` when upstream said `1685`. A watch that reads clones reports
+how stale your clones are.
+
+**And read the upstream the claim is actually about.** Checking `ss13-tgs-deploy`'s recorded
+`RUST_G_VERSION=6.1.0` against a locally available *downstream* Vanderlin fork reported drift
+(3.9.0) and looked like the skill had rotted. It had not: `Monkestation/Vanderlin` still pins
+6.1.0 and BYOND 516.1661 on master, exactly what the skill records. The fork simply lags. That is
+what `scope_repo` in `claim_links` exists for.
+
+*Transport note:* Python's TLS trust store rejects the certificate chain on this machine
+(`Basic Constraints of CA cert not marked critical`), so the script falls back to `curl`, which
+verifies against a different store. Verification is never disabled; if both refuse, the run reports
+the failure. `--offline-ok` makes an unreachable network a non-finding rather than an error.
+
+## Claim drift — the skills assert facts that expire
+
+`validate_ecosystem.py` checks that the repo agrees with *itself*. `verify_claims.py` checks that
+the skills still agree with **the repositories on this machine**: that `modular_zubbers/` is still
+where Bubberstation puts modular content, that `BUBBER EDIT` is still the tag, that a cited
+`code/...` path still resolves. Nothing fails loudly when a fork renames a folder — the skill just
+starts handing out stale facts with full confidence.
+
+**Division of labour with the version watch above: pins are watched upstream, layout is checked
+locally.** A clone is a fine witness for "does this folder exist" and a bad one for "what version
+is current", so no `claims.yaml` carries a version check any more — those moved to
+`version_watch.yaml` after local clones produced four false drift reports.
+
+Each skill's claims live in `<skill>/claims.yaml`, next to the prose ledger in
+`references/source-index.md` that they mechanise. **Repositories are identified by project file and
+content markers, never by a path** — the runner supplies paths by scanning a workspace at runtime,
+so the YAML stays shippable and machine-independent.
+
+```
+python scripts/verify_claims.py                    # scan the parent directory
+python scripts/verify_claims.py --workspace PATH   # scan somewhere else
+python scripts/verify_claims.py --skill ss13-tgui  # one skill
+```
+
+Three outcomes, and the middle one is the point:
+
+| | Meaning | What to do |
+|---|---|---|
+| `OK` | reality still matches | nothing |
+| `DRIFT` | reality moved; the claim is not wrong, it is **unverified again** | re-read the claim against the new version, then update `last_verified` |
+| `BROKEN` | reality contradicts the claim; the skill now says something false | fix the skill |
+
+**DRIFT is not a defect in the fork** and is the normal steady state — forks bump `tgui-core`
+constantly. It is a queue of evidence that has expired.
+
+Check types: `paths_exist`, `paths_absent` (both glob), `grep` (with `min_count`), `pin` (reads
+`dependencies.sh`-style `export NAME=value` or `package.json` deps, compares against
+`verified_at`), and `commit_rank`. Scope a hard claim to upstream via `name_hint` rather than
+letting an old fork's lag register as the convention changing; use `missing_key: skip` where a fork
+that never adopted something is out of scope rather than a counter-example.
+
+**Scheduling — weekly or every 10 commits, whichever comes first.** The triggers are OR'd:
+
+```
+python scripts/verify_claims.py --every-commits 10 --max-age-days 7
+```
+
+State lives in `.git/skill-drift/` (machine-local, never committed). `scripts/hooks/post-commit`
+wires this up; install it deliberately, it is not automatic:
+
+```
+cp scripts/hooks/post-commit .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+```
+
+The hook backgrounds the run and `post-commit` cannot fail a commit, so committing never waits.
+A full scan across ten checkouts is ~1.6 s: `grep` checks stop as soon as `min_count` is cleared,
+which is what keeps it hook-sized (it was 14 s before that).
+
+For a weekly run without a hook, schedule the same command with `--max-age-days 7`; it no-ops when
+called too soon, so over-scheduling is harmless.
+
+**When a check is wrong, fix the check.** The first run produced four `BROKEN`s that were all
+instrument error — `ByondUi` lives in `node_modules/tgui-core` (no fork vendors it in-tree) and
+CEV-Eris predates the Bun build. Narrow the target or scope the claim; do not record an
+instrument defect as a skill defect.
 
 ## Conventions & footguns
 

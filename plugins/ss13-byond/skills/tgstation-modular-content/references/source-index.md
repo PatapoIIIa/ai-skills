@@ -68,6 +68,8 @@ The workflow told you to check "`git log -1 -- <dir>` and recent commit counts".
 
 **Commit count separates the live root from the fossils by a factor of 4.5; the last-commit dates all fall inside a single day and separate nothing.** Half of the original advice was actively misleading, so step 1 now leads with the count and ships the one-line ranking command. Ratwood-2.0's ten roots make the same point at greater scale: on a fork that old, "which folder is current" is not answerable by looking.
 
+**And the count has its own failure mode, found by `claims.yaml` on the first automated run.** Lands-of-Alizeria (`roguetown.dme`) carries six roots whose commit counts are 3 / 2 / 2 / 1 / 1 / 1 — no margin at all — because the repository's entire history is 32 commits beginning 2026-04-08. It is not a shallow clone; the history was squashed or the repo re-initialised. File counts were checked as a fallback and were no better (74 / 66 / 26 / 18 / 13 / 8, a 1.12× lead). Step 1 therefore now requires roughly a 2× margin before trusting the ranking, and tells the agent to stop and ask rather than pick the largest of several small numbers. The automated check reports this repo as DRIFT permanently and correctly: the heuristic genuinely does not apply there.
+
 ## What is still unverified
 
 - **Everything about upstream Vanderlin** — `modular_abel/`, the theme-based override layout, `upstream_fixes.dm`, the `force_load.dm` readme habit, the temp-DME build, the map-import pipeline. All `[observed]`, none re-checkable here. Treat them as one fork's documented practice, not as a family norm.

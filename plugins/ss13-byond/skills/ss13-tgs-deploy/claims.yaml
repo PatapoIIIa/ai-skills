@@ -1,0 +1,76 @@
+# Machine-checkable half of references/source-index.md.
+#
+# This skill's source-index already says its version numbers were true of one
+# repository on one day. These checks make that statement operational instead of
+# decorative: they read the pins that are actually in the tree and report how far
+# the recorded ones have fallen behind.
+#
+# The rule the skill teaches -- read dependencies.sh, never .tgs.yml -- is itself
+# checkable, and that one is a hard claim: BROKEN means the instruction is wrong.
+
+skill: ss13-tgs-deploy
+
+targets:
+  any_ss13_fork:
+    markers: [dependencies.sh]
+    note: >-
+      Any checkout that pins its build inputs the tgstation way. Matched broadly:
+      the deployment procedure is fork-agnostic, only the numbers differ.
+
+  vanderlin_family:
+    project_file: vanderlin.dme
+    note: >-
+      Closest available relative of the fork this skill was written from. The
+      original deployment target is not checked out here, so its exact pins cannot
+      be re-read -- see source-index.md.
+
+  tg_upstream:
+    project_file: tgstation.dme
+    name_hint: tgstation
+    note: >-
+      Upstream, where the family's build conventions are set. Hard claims about the
+      toolchain are scoped here so an old fork lagging behind does not register as
+      the convention having changed.
+
+claims:
+  - id: dependencies-sh-is-the-pin-source
+    target: any_ss13_fork
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      dependencies.sh at the repo root is the authority on the BYOND version, not
+      .tgs.yml -- step 6 of the checklist sends you there. BROKEN means the file
+      stopped carrying the BYOND pin and the instruction needs rewriting.
+    check:
+      type: grep
+      pattern: "BYOND_MAJOR"
+      files: ["dependencies.sh"]
+      min_count: 1
+
+  # Version pins are NOT checked here. They are watched by
+  # scripts/version_watch.yaml, which reads the canonical upstream over HTTPS.
+  #
+  # This file reads local checkouts, and a local checkout answers a different
+  # question than the one a version claim asks. Measured 2026-09-01: checking
+  # RUST_G_VERSION against the locally available vanderlin.dme fork reported
+  # DRIFT (3.9.0 vs the recorded 6.1.0) and looked like the skill had gone stale.
+  # It had not -- the actual upstream, Monkestation/Vanderlin, still pins 6.1.0
+  # and BYOND 516.1661, exactly what this skill records. The fork simply lags.
+  # Reading a downstream fork to check a claim about its upstream manufactures
+  # false alarms.
+
+  - id: bun-is-still-the-tgui-builder
+    target: tg_upstream
+    grade: verified
+    last_verified: 2026-09-01
+    says: >-
+      The tgui build step goes through Bun, pinned by BUN_VERSION. Scoped to upstream
+      deliberately: this is where the family convention is set, and a fork that predates
+      the Bun build (CEV-Eris still pins only NODE_VERSION) is a different generation
+      rather than a counter-example. BROKEN means the family moved off Bun and the
+      tgui/Bun section is stale.
+    check:
+      type: grep
+      pattern: "BUN_VERSION"
+      files: ["dependencies.sh"]
+      min_count: 1

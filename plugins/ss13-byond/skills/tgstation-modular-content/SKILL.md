@@ -29,7 +29,9 @@ The *concepts* below are stable across /tg/ forks; the *folder names, include me
    for d in modular*/; do echo "$(git rev-list --count HEAD -- "$d") $d"; done | sort -rn
    ```
 
-   Add to the top row. If there is no modular root, or recent commits mostly bypass it, see "When to stop."
+   Add to the top row **when the top row actually leads** — roughly a 2× margin over the runner-up. **When it does not, stop and ask; do not pick the largest of several small numbers.** A squashed or re-initialised repository has no usable history: one fork measured 2026-09-01 carried six roots whose counts were 3/2/2/1/1/1 across a 32-commit history, and its file counts (74/66/26/18/13/8) were no more decisive. On such a repo the honest answer is that the code cannot tell you — read the fork's own readme, or ask which root is current, and say why you are asking.
+
+   If there is no modular root, or recent commits mostly bypass it, see "When to stop."
 2. **Find the override sub-layout.** Most forks split it two ways: a path-mirroring folder for *overrides/extensions of upstream types* (Bubberstation: `master_files/`, mirroring the upstream `code/...` path) and a self-contained-module folder for *net-new content* (`modules/<feature>/`). Read `references/bubberstation-patterns.md` for the exact layout.
 3. **Read the fork's own handbook.** Open any `readme.md` / `module_template.md` / `CONTRIBUTING` inside the modular root and obey it — it overrides this skill on naming, tagging, and folder rules. Bubberstation's is `modular_zubbers/readme.md`.
 4. **Learn how files get compiled in.** New `.dm` files do nothing until included. Two mechanisms exist: `#include` lines appended to the main `.dme` (Bubberstation, between `// BEGIN_INCLUDE` / `// END_INCLUDE`), or a per-module aggregator file that the `.dme` includes once (upstream Vanderlin's `_module.dm`). **Grep, don't assume** — the flat list is by far the more common of the two, and every Vanderlin- and Roguetown-lineage fork checked on 2026-09-01 used it rather than an aggregator, including forks descended from the codebase the aggregator pattern comes from:

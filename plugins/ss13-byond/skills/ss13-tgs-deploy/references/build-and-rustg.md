@@ -18,6 +18,8 @@ SS13 loads `librust_g.so` (the 32-bit build!) at runtime through the BYOND FFI. 
 
 `https://github.com/tgstation/rust-g/releases/download/<version>/librust_g.so` — the version being `RUST_G_VERSION` from `dependencies.sh` (6.1.0 on Vibelin).
 
+**Read that pin, never assume it.** Across six upstream forks measured 2026-09-01, `RUST_G_VERSION` ranged over 3.9.0, 6.1.0, 6.2.0 and 7.0.0, and one fork pinned it to `master` — an unpinned moving target that will not reproduce a build twice. There is no "current" rust-g for this family, and the glibc question below has to be re-asked for whichever version the repo in front of you actually names.
+
 **The trap:** release binaries are built on a recent Ubuntu and require glibc 2.38/2.39. The `tgstation/server` container is Debian bookworm with glibc **2.36**. The library then silently fails to load, and the symptoms look nothing like "wrong binary":
 
 - `log_write` runtimes, and runtimes from other rust-g procs, as the world starts;

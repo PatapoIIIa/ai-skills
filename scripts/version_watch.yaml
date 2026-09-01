@@ -1,0 +1,116 @@
+# Which upstream repositories to watch, which files to read, and which keys matter.
+#
+# Read from the canonical upstreams over HTTP, deliberately NOT from local
+# checkouts. A local clone is a snapshot of whenever it was last pulled, and the
+# snapshots on this machine were badly stale when measured on 2026-09-01: the
+# tgstation working tree sat 1039 commits behind its own origin/master and still
+# reported BYOND_MINOR=1659 when upstream had moved to 1685. Watching versions
+# through a stale clone reports the clone's age, not the world's state.
+#
+# Same lesson in the other direction: reading a *downstream fork* to check a
+# claim about its upstream produced a false drift signal. Monkestation/Vanderlin
+# pins rust-g 6.1.0, exactly what ss13-tgs-deploy records -- but a downstream
+# fork of it pins 3.9.0, which looked like the skill had gone stale when it had
+# not. Watch the upstream a claim is actually about.
+#
+# Everything here is public source read over plain HTTPS GET. No credentials,
+# nothing sent.
+
+fetch:
+  base_url: https://raw.githubusercontent.com
+  timeout_seconds: 20
+
+repos:
+  - id: tgstation
+    owner_repo: tgstation/tgstation
+    branch: master
+    note: Upstream /tg/. Sets the family's toolchain conventions.
+
+  - id: ratwood
+    owner_repo: Rotwood-Vale/Ratwood-2.0
+    branch: master
+    note: Roguetown lineage.
+
+  - id: vanderlin
+    owner_repo: Monkestation/Vanderlin
+    branch: master
+    note: >-
+      The upstream ss13-tgs-deploy's recorded deployment numbers come from.
+      Its pins are the ones that claim should be checked against.
+
+  - id: azure_peak
+    owner_repo: Azure-Peak/Azure-Peak
+    branch: master
+    note: Roguetown/Azure-Peak lineage.
+
+  - id: bubberstation
+    owner_repo: Bubberstation/Bubberstation
+    branch: master
+    note: >-
+      The focus fork of tgstation-modular-content. Its own clone on this machine
+      reported rust-g 4.2.0 and tgui-core ^5.10.0 on 2026-09-01 while upstream was
+      already on 6.2.0 and ^6.1.1 -- another reason this file reads upstream.
+
+  - id: cmss13
+    owner_repo: cmss13-devs/cmss13
+    branch: master
+    note: >-
+      The heavy fork the skills use as the counter-example. Watch it for how far a
+      diverged codebase drifts from family conventions: it carries no tgui-core at
+      all (react directly, and a major behind everyone else), and its rust-g pin
+      runs ahead of upstream /tg/.
+
+# Each file names the keys worth watching. A key that is absent is reported as
+# GONE rather than ignored -- tgstation removed NODE_VERSION_LTS between the
+# local snapshot and current master, and a silent disappearance is exactly the
+# kind of change a watch exists to surface.
+files:
+  - path: dependencies.sh
+    format: shell            # `export NAME=value`, quoted or bare
+    keys:
+      - BYOND_MAJOR
+      - BYOND_MINOR
+      - RUST_G_VERSION
+      - BUN_VERSION
+      - NODE_VERSION_LTS
+      - SPACEMAN_DMM_VERSION
+      - PYTHON_VERSION
+      - AUXLUA_VERSION
+      - DREAMLUAU_VERSION
+      - CUTTER_VERSION
+
+  - path: tgui/packages/tgui/package.json
+    format: npm              # dependencies + devDependencies
+    keys:
+      - tgui-core
+      - react
+      - typescript
+
+# When one of these keys moves, the named skill claim was verified against the
+# old value and needs re-reading. Keeps the version watch connected to the
+# claims instead of being a standalone curiosity.
+claim_links:
+  tgui-core:
+    skill: ss13-tgui
+    claim: tgui-core-version-in-verified-range
+    verified_at: ["5.6.0", "6.1.1"]
+    why: >-
+      The ByondUi findings (phonehome defaults on; the effect hook's empty
+      dependency array) and the DmIcon availability note were read at those two
+      versions.
+
+  RUST_G_VERSION:
+    skill: ss13-tgs-deploy
+    claim: rust-g-version-recorded
+    verified_at: ["6.1.0"]
+    scope_repo: vanderlin
+    why: The recorded deployment built rust-g 6.1.0 against the container's glibc.
+
+  BYOND_MINOR:
+    skill: ss13-tgs-deploy
+    claim: byond-version-recorded
+    verified_at: ["1661"]
+    scope_repo: vanderlin
+    why: >-
+      That deployment needed 516.1661 while .tgs.yml still claimed 515.1639 --
+      the case behind "dependencies.sh is the source of truth".

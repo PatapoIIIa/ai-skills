@@ -1,0 +1,104 @@
+# Machine-checkable half of references/source-index.md.
+#
+# The third verification pass recorded in that file grepped this skill's tg
+# citations against a live tgstation checkout and resolved 12 of 13 paths. Those
+# paths are quoted at users as "the definition lives here". Upstream moves files;
+# when it does, the skill starts sending people to somewhere that no longer
+# exists, and nothing else in this repo would notice.
+#
+# Engine-semantics claims (tier 1) are deliberately absent: they are verified
+# against the official DM Reference, not against a checkout, and this runner has
+# no way to read that.
+
+skill: byond-ss13-coding
+
+targets:
+  tg_upstream:
+    project_file: tgstation.dme
+    name_hint: tgstation
+    note: >-
+      Upstream itself. The name hint separates it from the forks that share its
+      project file; a fork keeping the same layout is not evidence about upstream.
+
+  tg_family:
+    project_file: tgstation.dme
+    note: Upstream and every fork that still tracks its directory layout.
+
+claims:
+  - id: cited-tg-paths-still-resolve
+    target: tg_upstream
+    grade: verified
+    last_verified: 2026-07-18
+    says: >-
+      The code paths this skill cites for lifecycle, the MC, components, signals and
+      the tick all resolve upstream. BROKEN means a citation now points at nothing and
+      ss13-architecture.md / dm-language-and-runtime.md need updating.
+    check:
+      type: paths_exist
+      paths:
+        - code/__HELPERS/_lists.dm
+        - code/__DEFINES/_tick.dm
+        - code/__DEFINES/MC.dm
+        - code/__DEFINES/qdel.dm
+        - code/__DEFINES/subsystems.dm
+        - code/__DEFINES/dcs/declarations.dm
+        - code/controllers/master.dm
+        - code/controllers/subsystem/garbage.dm
+        - code/controllers/subsystem/processing/processing.dm
+        - code/datums/datum.dm
+        - code/datums/components/_component.dm
+
+  - id: tg-guides-still-normative
+    target: tg_upstream
+    grade: verified
+    last_verified: 2026-07-18
+    says: >-
+      tg's own guides are where tier-3 conventions come from, and step 1 of the
+      workflow tells you to read them before anything in this skill.
+    check:
+      type: paths_exist
+      paths:
+        - .github/guides/STANDARDS.md
+        - .github/guides/STYLE.md
+
+  - id: tg-ships-no-pragma-file
+    target: tg_upstream
+    grade: verified
+    last_verified: 2026-07-18
+    says: >-
+      code/__pragmas.dm is attributed to cmss13 and Vanderlin, NOT to tg -- upstream
+      has none. BROKEN means upstream adopted one and the attribution in
+      source-index.md and fork-comparison.md is now wrong.
+    check:
+      type: paths_absent
+      paths: [code/__pragmas.dm]
+
+  - id: proc-ref-macros-still-exist
+    target: tg_family
+    grade: verified
+    last_verified: 2026-07-18
+    says: >-
+      PROC_REF / TYPE_PROC_REF / GLOBAL_PROC_REF are defined in the codebase, which is
+      what makes "reference procs through PROC_REF" an always-on invariant rather than
+      a suggestion. BROKEN on a fork means that invariant does not apply there.
+    check:
+      type: grep
+      pattern: "define\\s+PROC_REF|define\\s+TYPE_PROC_REF"
+      path: code
+      files: ["*.dm"]
+      min_count: 1
+
+  - id: seconds-per-tick-is-the-live-naming
+    target: tg_upstream
+    grade: verified
+    last_verified: 2026-07-18
+    says: >-
+      seconds_per_tick dominates delta_time upstream (671 files vs 9 when measured), which
+      is why the frame-independence invariant names it first. DRIFT or BROKEN means the
+      naming moved again and the invariant's wording should follow.
+    check:
+      type: grep
+      pattern: "seconds_per_tick"
+      path: code
+      files: ["*.dm"]
+      min_count: 300

@@ -1,0 +1,70 @@
+#!/bin/sh
+# Skill-truth drift check, throttled.
+#
+# Two things go stale independently, so two checks run:
+#
+#   check_versions.py  -- package/toolchain pins, read from the canonical
+#                         upstreams over HTTPS. Local clones are NOT used: the
+#                         tgstation worktree here was 1039 commits behind its
+#                         own origin/master when measured, so a clone reports
+#                         its own age rather than the world's state.
+#   verify_claims.py   -- folder layout, edit tags and conventions, read from
+#                         whatever checkouts are on this machine, which is a
+#                         fine witness for "does this folder exist".
+#
+# Both run every 10 commits, or weekly, whichever comes first.
+#
+# Install (from the repository root):
+#     cp scripts/hooks/post-commit .git/hooks/post-commit
+#     chmod +x .git/hooks/post-commit
+#
+# Opt-in on purpose: a hook is persistent local configuration, this one reads
+# your other checkouts, and the version check makes outbound HTTPS requests.
+#
+# post-commit cannot fail a commit -- git ignores its exit code -- and the work
+# is backgrounded, so committing never waits on it.
+
+set -e
+
+ROOT=$(git rev-parse --show-toplevel)
+REPORT_DIR="$ROOT/.git/skill-drift"
+mkdir -p "$REPORT_DIR"
+
+(
+  # --every-commits and --max-age-days are OR'd: either trigger fires the run.
+  # The script decides; the hook just offers it the chance on every commit.
+  python "$ROOT/scripts/verify_claims.py" \
+      --every-commits 10 \
+      --max-age-days 7 \
+      --json "$REPORT_DIR/claims.json" \
+      > "$REPORT_DIR/claims.txt" 2>&1 || true
+
+  # Only fetch versions when the claim run was not throttled away, so the two
+  # stay on one schedule and idle commits make no network requests.
+  if ! grep -q "^Skipping claim check" "$REPORT_DIR/claims.txt" 2>/dev/null; then
+      # --offline-ok: no network is not a finding, it is just no answer today.
+      python "$ROOT/scripts/check_versions.py" --offline-ok \
+          > "$REPORT_DIR/versions.txt" 2>&1 || true
+  fi
+
+  # Say something only when there is something to say.
+  # grep -c already prints 0 when it matches nothing; it just exits non-zero
+  # while doing so. `|| echo 0` would append a second line and the comparison
+  # below then dies with "integer expected".
+  claims=$(grep -c "^  \(DRIFT\|BROKEN\)" "$REPORT_DIR/claims.txt" 2>/dev/null || true)
+  versions=$(grep -c "^  \(MOVED\|NEW\|GONE\)" "$REPORT_DIR/versions.txt" 2>/dev/null || true)
+  claims=${claims:-0}
+  versions=${versions:-0}
+
+  if [ "$claims" -gt 0 ] || [ "$versions" -gt 0 ]; then
+      echo ""
+      echo "skill-truth drift detected -- $REPORT_DIR/"
+      [ "$claims" -gt 0 ] && echo "  claims.txt:   $claims claim(s) need attention"
+      if [ "$versions" -gt 0 ]; then
+          echo "  versions.txt: $versions pin(s) moved upstream"
+          echo "  accept them with: python scripts/check_versions.py --update"
+      fi
+  fi
+) &
+
+exit 0

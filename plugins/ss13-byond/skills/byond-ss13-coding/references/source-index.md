@@ -66,3 +66,7 @@ If the user has a local export of the official BYOND Discord (DiscordChatExporte
 ## Repository checkouts
 
 This skill's repository-profiles.md was authored by statically reading read-only checkouts of six named codebases: tgstation, BandaStation, cmss13, CEV-Eris, Twilight-Axis, Vanderlin. Where those checkouts live — if they exist at all — is entirely local to whatever machine and workspace this skill runs in; never assume a fixed layout or hardcode a path. If a semantic base (`ai_navigation/`) is available for the repo at hand, find it via the `byond-codemaster-controller` skill's discovery protocol rather than by name-guessing a folder.
+
+## Machine-checkable half
+
+The claims on this page that can be tested against a checkout are encoded in `../claims.yaml` and run by `scripts/verify_claims.py` in the skills repository (weekly, or every 10 commits). A claim reported as **DRIFT** there has not been disproved — its evidence has expired, and it needs re-reading against the version that is now in the tree before being quoted at anyone. Update `last_verified` in the YAML and the dates here in the same pass.
