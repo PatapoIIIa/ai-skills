@@ -16,7 +16,7 @@ claude plugin marketplace add PatapoIIIa/ai-skills
 claude plugin install ss13-byond@ss13-ai-skills
 ```
 
-Внутри Claude Code — то же самое через `/plugin marketplace add PatapoIIIa/ai-skills`, затем `/plugin install ss13-byond@ss13-ai-skills`.
+Внутри Claude Code — то же самое через `/plugin marketplace add PatapoIIIa/ai-skills`, затем `/plugin install ss13-byond@ss13-ai-skills`. **Слэш-команда `/plugin` есть не везде** — см. раздел «Если `/plugin` недоступен» ниже.
 
 **Про обновления.** В манифесте намеренно не задано поле `version`: версией считается git SHA, поэтому вы всегда получаете актуальный коммит ветки по умолчанию — без ручного повышения версий с моей стороны. Как обновиться — раздел ниже.
 
@@ -32,6 +32,19 @@ claude plugin update ss13-byond@ss13-ai-skills
 Внутри Claude Code — `/plugin marketplace update ss13-ai-skills`, затем `/plugin update ss13-byond@ss13-ai-skills`. Первая команда обновляет каталог маркетплейса, вторая ставит новую версию плагина — нужны обе. Автоматически, без этих команд, обновление не приходит.
 
 *Inside Claude Code — `/plugin marketplace update ss13-ai-skills`, then `/plugin update ss13-byond@ss13-ai-skills`. The first refreshes the marketplace catalog, the second installs the new plugin version — both are required. Nothing updates automatically without running them.*
+
+### Если `/plugin` недоступен / When `/plugin` is unavailable
+
+В части сред (десктоп-приложение и другие не-терминальные поверхности) слэш-команда отвечает `/plugin isn't available in this environment`. Плагин тут ни при чём: **работает ровно тот же CLI**, ему просто нужен настоящий шелл.
+
+- Есть терминал — выполните команды `claude plugin ...` выше как есть, этого достаточно.
+- Терминала нет — нужен любой инструмент, умеющий запускать shell-команды. Например MCP-сервер [Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP): попросите ассистента выполнить через него `claude plugin marketplace update ss13-ai-skills`, затем `claude plugin update ss13-byond@ss13-ai-skills`.
+
+Проверить результат: `claude plugin list` — у `ss13-byond@ss13-ai-skills` в поле Version стоит git SHA, и он должен совпадать с последним коммитом ветки по умолчанию.
+
+*In some environments (the desktop app and other non-terminal surfaces) the slash command answers `/plugin isn't available in this environment`. Nothing is wrong with the plugin: **the same CLI works**, it just needs a real shell.*
+
+*If you have a terminal, the `claude plugin ...` commands above are all you need. If you do not, use anything that can run shell commands for you — for example the [Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP) MCP server — and have it run those same commands. Verify with `claude plugin list`: the Version field for `ss13-byond@ss13-ai-skills` is a git SHA and should match the latest commit on the default branch.*
 
 ## Дерево зависимостей / Dependency tree
 

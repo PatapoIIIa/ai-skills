@@ -88,6 +88,8 @@ claude plugin install ss13-byond@ss13-ai-skills
 
 Install the whole set rather than picking skills apart: the controller routes to the others by name and degrades if they are missing. The manifest deliberately omits `version`, so you track the default branch's latest commit; for updates, see the "Обновление / Updating" section in [README.md](../README.md).
 
+**When `/plugin` is unavailable.** In some environments — the desktop app and other non-terminal surfaces — the slash command answers `/plugin isn't available in this environment`. The `claude plugin ...` commands above still work; they just need a real shell. If you have no terminal at hand, anything that can run shell commands will do — for example the [Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP) MCP server: ask your assistant to run the same commands through it. Verify with `claude plugin list`, where the Version field for `ss13-byond@ss13-ai-skills` is a git SHA.
+
 For agents without plugin support, take the individual skill folder from `plugins/ss13-byond/skills/` and add it to your agent's skill storage by hand.
 
 Either way there are no paths to configure: the agent discovers repository and semantic-base locations itself via the discovery protocol.
