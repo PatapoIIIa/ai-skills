@@ -121,6 +121,23 @@ The same "don't hand-roll what the framework provides" rule applies to markup �
 
 Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it would break a bespoke panel's DOM/scroll/sticky structure, or you'd neutralize all of the component's chrome while using none of its behavior, keep the simpler construct. Details and the lost-contract checklist: `references/components-and-style.md`.
 
+## React patterns that survive tgui's render model
+
+tgui is React, so general React advice applies — but only the part that survives this render model, and most published guidance does not. A tgui interface has **no data fetching, no router, no SSR/RSC, no Suspense, and no bundler splitting per route**: the backend pushes a whole payload and the tree re-renders. Measured against a live Vanderlin-family fork (2026-09-01, React 19.1, 111 interfaces): zero occurrences of `next/dynamic`, SWR, `Suspense`, `use client` or RSC. So **discard waterfall/bundle/server-tier advice outright** when it arrives from a general React source — it is not merely lower priority here, it has no referent.
+
+What is left is the re-render tier, and even that is conditional. **With autoupdate OFF (the default this skill recommends) an interface re-renders on user action, not per tick** — so inline arrow props and unmemoised children usually cost nothing measurable, and “fix” commits that add `useCallback` everywhere are churn. The same fork carries 403 inline `onClick={() => …}` handlers with no evidence any of them matter. Apply the measure-first rule from the Approach section before optimising any of this.
+
+Four rules earn their place because they are correctness or startup issues rather than micro-optimisation:
+
+- **Never define a component inside another component.** Each parent render creates a new component *type*, so React unmounts and remounts the subtree — state is lost, effects re-run, and any `ByondUi` inside is torn down and re-created (see the remount-flash warning in the ByondUi section). Hoist it to module scope, or make it a plain function returning JSX only if it takes no state.
+- **Derive during render; do not mirror backend data into state via `useEffect`.** `const sorted = useMemo(() => sort(data.items), [data.items])` — not a `useState` + `useEffect` that copies `data.items` on every push. The mirrored copy is stale for one render after every `ui_data` update and desynchronises the moment an action changes data without changing the effect's dependency. This is the single most valuable rule here because the backend-push model makes the bug easy to write and hard to see.
+- **Initialise expensive `useState` lazily**: `useState(() => buildCatalog(data))`, not `useState(buildCatalog(data))` — the eager form runs the builder on *every* render and throws the result away.
+- **Use functional `setState`** (`setX(x => x + 1)`) when the next value depends on the previous one; it keeps handlers stable and avoids stale-closure bugs across an async `act()` round-trip.
+
+React 19 features are available on forks pinned to it (`useDeferredValue`, `startTransition`, `Activity`, `useEffectEvent`) — check `tgui/packages/tgui/package.json` before reaching for one, exactly as with any tgui-core-versioned claim.
+
+*Rule selection informed by Vercel's `react-best-practices` skill (MIT); ~40% of it — the two CRITICAL tiers and the server tier — was rejected as having no surface in tgui, and its “ternary not `&&`” rule was dropped after checking: the fork's 323 `&&` conditionals all guard on explicit comparisons (`x.length > 0`, `x !== undefined`), so the falsy-number bug it targets does not occur.*
+
 ## Review checklist
 
 - Does `ui_interact`/`tgui_interact` follow the local `try_update_ui` pattern, with no extra refs or scanners?
@@ -147,6 +164,8 @@ Adopting `Section`/`Button` must *delete* markup, CSS, or behavior code. If it w
 - If `ByondUi` is present, is it reserved for real BYOND controls, anchored to `config.window`, given a stable id when needed, and kept out of scrolling/zero-size layout traps? Are volatile params (zoom, sizes) kept OUT of the React `key` and updated via DM `winset` instead of remounts? Is `phonehome={false}` set when DM owns the control lifecycle?
 - Does one user interaction stay within the client's Topic rate budget (count acts + geometry reports + per-map `renderByondUi` × synthetic resize dispatches + hover relays against `SECOND_TOPIC_LIMIT`/`MINUTE_TOPIC_LIMIT`)? For "player X lags but the server is healthy" reports, was game.log grepped for `topic limit` before touching interface code?
 - For embedded-map sizing/positioning work, were the canvas and viewport MEASURED (`winget view-size` at fixed zoom, frontend geometry report) rather than modeled from screenshots, and do the logs carry a bundle/dmb fingerprint so stale-build reports can't fabricate false conclusions?
+- Is any component defined **inside** another component (remount-per-render, and it tears down any `ByondUi` in that subtree)? Is backend data **derived during render** rather than mirrored into `useState` via `useEffect`? Are expensive `useState` initialisers lazy (`useState(() => …)`)?
+- Conversely: is a `useCallback`/`useMemo`/`memo` being added without a demonstrated cost? With autoupdate off, re-renders follow user actions, so inline handlers are usually not the problem — don't accept general-React micro-optimisation as a substitute for measurement.
 - Is SCSS proportional to the problem (not 1000+ lines re-implementing component layout), free of absolute-pixel layout, and reusing the shared theme base rather than a one-off palette or a bespoke scaling control?
 
 ## Shared tgui packages (tgui-panel, tgui-say, common chat code)
