@@ -25,6 +25,8 @@ claude plugin install ss13-byond@ss13-ai-skills
 - `ai_navigation_*/` — semantic bases for specific forks. **Data, not skills, and deliberately
   outside the plugin** so subscribers never receive fork-specific state. Do not move them in.
 - `docs/` — bilingual user guides and benchmark tables. `README.md` — the public face.
+- `scripts/validate_ecosystem.py` — repo-maintenance only, deliberately **outside** `plugins/` so
+  subscribers never receive it. Checks the invariants below mechanically.
 
 The five skills and the one contract that binds them: `byond-codemaster-controller` routes;
 `byond-ss13-coding`, `ss13-tgui` and `tgstation-modular-content` implement on separate axes;
@@ -46,15 +48,35 @@ because the user works in both languages.
 Miss one and the ecosystem contradicts itself. In order:
 
 1. `plugins/ss13-byond/skills/<name>/SKILL.md` — the spec itself.
-2. **Controller Gate 1** — a new numbered node *in front of the default* (currently node 5), with
-   its domain guard. This is the only place routing may be defined.
+2. **Controller Gate 1** — a new node *in front of the default node* (the last one in Gate 1), with
+   its domain guard, renumbering what follows. This is the only place routing may be defined, and
+   the only place that may refer to a node by number — everywhere else names nodes by role, so
+   adding a skill cannot leave a stale "see node 5" behind.
 3. Controller's *Architecture skills this controller binds* table — invariants + which base files
    to bind (or an explicit "none", as `ss13-tgs-deploy` has).
 4. Controller frontmatter `description` — it lists the skills by name.
 5. `README.md` — the *Что внутри* table **and** the mermaid dependency tree.
 6. `docs/skills-guide.ru.md` **and** `docs/skills-guide.en.md` — both, always paired.
 
-Then run `claude plugin validate ./plugins/ss13-byond` and `claude plugin validate .`.
+Then run all three, in this order:
+
+```
+python scripts/validate_ecosystem.py
+claude plugin validate ./plugins/ss13-byond
+claude plugin validate .
+```
+
+**`validate_ecosystem.py` enforces touches 2–6 mechanically** — plus link integrity, orphaned
+reference/asset/script files, description length against the 1024 limit, EN+RU eval balance, the
+skill-count claims in both guides, that every skill Gate 1 dispatches to actually exists, that no
+file outside the gate list refers to a node by number, machine paths, CRLF and empty directories.
+It exists because the 6-touch rule was aspirational until it wasn't: `ss13-tgs-deploy` shipped with
+touch #6 skipped (both guides still said "four skills") and nothing caught it for six weeks. It
+exits non-zero on errors, so it can gate a commit. Warnings are advisory — a description at 960
+chars still loads, but it has no room left for a new trigger word.
+
+Touch #1 is the only one the script cannot check: it has no opinion about whether the SKILL.md body
+is any good.
 
 ## Conventions & footguns
 

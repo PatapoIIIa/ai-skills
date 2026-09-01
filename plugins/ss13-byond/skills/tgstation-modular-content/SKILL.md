@@ -21,10 +21,24 @@ Use this skill when the work adds or changes gameplay content on a fork that tra
 
 The *concepts* below are stable across /tg/ forks; the *folder names, include mechanism, and edit-tag wording are not.* Learn the local convention first — a pattern copied from another fork will not match here.
 
-1. **Find the modular root — the *active* one.** List the repo top level. Look for `modular_<name>/` (Bubberstation: `modular_skyrat/`, `modular_zubbers/`; Vanderlin: `modular_abel/`). Old forks accumulate modular roots across generations (e.g. `modular/` → `modular_deserttown/` → `modular_twilight_axis/`); when several exist, check `git log -1 -- <dir>` and recent commit counts per root to find where current work lands, and add there. If there is no modular root, or recent commits mostly bypass it, see "When to stop."
+1. **Find the modular root — the *active* one.** List the repo top level and look for `modular_<name>/` (Bubberstation: `modular_skyrat/`, `modular_zubbers/`). Accumulation across generations is the norm, not the exception: of the forks measured for this skill, one carried three roots and a sibling carried ten.
+
+   **Rank the candidates by commit count, not by last-commit date.** On a three-root fork measured 2026-09-01 the counts were 3305 / 743 / 2 — an unmistakable winner — while all three roots' last-commit dates fell within a single day of each other and would have told you nothing:
+
+   ```bash
+   for d in modular*/; do echo "$(git rev-list --count HEAD -- "$d") $d"; done | sort -rn
+   ```
+
+   Add to the top row. If there is no modular root, or recent commits mostly bypass it, see "When to stop."
 2. **Find the override sub-layout.** Most forks split it two ways: a path-mirroring folder for *overrides/extensions of upstream types* (Bubberstation: `master_files/`, mirroring the upstream `code/...` path) and a self-contained-module folder for *net-new content* (`modules/<feature>/`). Read `references/bubberstation-patterns.md` for the exact layout.
 3. **Read the fork's own handbook.** Open any `readme.md` / `module_template.md` / `CONTRIBUTING` inside the modular root and obey it — it overrides this skill on naming, tagging, and folder rules. Bubberstation's is `modular_zubbers/readme.md`.
-4. **Learn how files get compiled in.** New `.dm` files do nothing until included. Find whether the fork adds `#include` lines to the main `.dme` (Bubberstation, between `// BEGIN_INCLUDE` / `// END_INCLUDE`) or to a per-module aggregator file that the `.dme` includes once (Vanderlin: `modular_abel/_module.dm`). CI usually *enforces* that every `.dm` is included — a new file that compiles locally can still fail the include check.
+4. **Learn how files get compiled in.** New `.dm` files do nothing until included. Two mechanisms exist: `#include` lines appended to the main `.dme` (Bubberstation, between `// BEGIN_INCLUDE` / `// END_INCLUDE`), or a per-module aggregator file that the `.dme` includes once (upstream Vanderlin's `_module.dm`). **Grep, don't assume** — the flat list is by far the more common of the two, and every Vanderlin- and Roguetown-lineage fork checked on 2026-09-01 used it rather than an aggregator, including forks descended from the codebase the aggregator pattern comes from:
+
+   ```bash
+   grep -c "^#include" <project>.dme && grep -n "modular" <project>.dme | head
+   ```
+
+   CI usually *enforces* that every `.dm` is included — a new file that compiles locally can still fail the include check.
 5. **Read 2–3 neighboring modules** of the same kind. Copy their folder shape, include style, edit-tag wording, and asset-path style. Local neighbors beat this skill.
 6. **Decide the seam** using the decision matrix below, then implement.
 
@@ -93,3 +107,4 @@ When you hit one, report: what you wanted to do, why no modular seam reaches it,
 - `references/bubberstation-patterns.md` — Bubberstation modular layout in detail: `master_files/` vs `modules/`, the per-module `readme.md` template, the `BUBBER EDIT` comment grammar for unavoidable upstream edits, the `~~bubber_defines` convention, the automapper config schema, and the tgui file marker. **Read when working in a Bubberstation/Skyrat-style fork.**
 - `references/fork-comparison.md` — Bubberstation vs Vanderlin vs cmss13-MARINES: which patterns to borrow (Vanderlin's single-line aggregator include, the `upstream_fixes.dm` override-from-module idea), which are architecture-specific and must not leak into a general fork (Vanderlin's temp-DME build, its map-import pipeline; cmss13's heavy-fork direct edits), and which rules are universal. **Read when the fork is not Bubberstation, or to judge how far a pattern generalizes.**
 - `references/extension-recipes.md` — step-by-step modular recipes per content type (item, mob, job, species, area, map edit, component, crafting recipe, research design, reagent, tgui), each as a copy-the-neighbor checklist. **Read when you need a concrete starting point for a specific content type.**
+- `references/source-index.md` — which folder names, tags and mechanisms in this skill were re-verified against a live checkout and when, and which are one fork's documented practice rather than a family norm. **Read before presenting any named path, root or edit tag here as something the fork in front of you will have.**

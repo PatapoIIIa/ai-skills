@@ -26,7 +26,7 @@ Two edges it does not cross:
 - A **DM compile error, runtime, or code-level defect** surfaced by a deploy belongs to `byond-ss13-coding`. This skill's job ends at "the build failed, here is the compiler output" — it does not start editing `.dm` files to make a deploy go green.
 - An **interface that renders wrong once assets are demonstrably being served** belongs to `ss13-tgui`. This skill owns asset *delivery* (transport mode, webroot, CORS, nginx); it does not own what tgui does with an asset it successfully received.
 
-This skill binds to no semantic base — `ai_navigation/` folders describe code, not hosts. Routing between skills is `byond-codemaster-controller`'s single source of truth (its Gate 1, node 0, lands here); do not re-derive it.
+This skill binds to no semantic base — `ai_navigation/` folders describe code, not hosts. Routing between skills is `byond-codemaster-controller`'s single source of truth (the first node of its Gate 1 lands here); do not re-derive it.
 
 ## Execution limits
 

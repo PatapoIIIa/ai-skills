@@ -5,14 +5,14 @@
       "id": 1,
       "lang": "ru",
       "prompt": "Добавь новый предмет профессии на нашем форке, не трогая upstream-файлы.",
-      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and using git log -1 per root when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
+      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and ranking roots by COMMIT COUNT rather than last-commit date when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
       "files": []
     },
     {
       "id": 2,
       "lang": "en",
       "prompt": "Add a new job item on our fork without touching upstream files.",
-      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and using git log -1 per root when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
+      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and ranking roots by COMMIT COUNT rather than last-commit date when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
       "files": []
     },
     {

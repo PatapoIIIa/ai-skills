@@ -112,6 +112,48 @@
       "prompt": "Optimize the hot fluid-processing proc in my CEV-Eris repository — the server is lagging. Which skills, in what order?",
       "expected_output": "Dispatches byond-ss13-coding as the default architecture skill (performance/DM task, no tgui or modular-placement concern on a hard fork), resolves the repo's base if one exists for routing, and produces a binding brief; does not invoke ss13-tgui or tgstation-modular-content.",
       "files": []
+    },
+    {
+      "id": 17,
+      "lang": "ru",
+      "prompt": "Надо перенести наш SS13-сервер на новую машину. Какие скиллы нужны и с чего начать?",
+      "expected_output": "Takes Gate 1's first node: the work is about running a server rather than changing its code, so ss13-tgs-deploy is dispatched ALONE and routing STOPS there — no Gate 2, no semantic base (bases describe code, not hosts), and no composition with the architecture skills. Does not run the Discovery protocol, and does not offer to bootstrap a base for a hosting question.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "lang": "en",
+      "prompt": "We need to move our SS13 server to a new machine. Which skills apply and where do we start?",
+      "expected_output": "Takes Gate 1's first node: the work is about running a server rather than changing its code, so ss13-tgs-deploy is dispatched ALONE and routing STOPS there — no Gate 2, no semantic base (bases describe code, not hosts), and no composition with the architecture skills. Does not run the Discovery protocol, and does not offer to bootstrap a base for a hosting question.",
+      "files": []
+    },
+    {
+      "id": 19,
+      "lang": "ru",
+      "prompt": "Сервер лагает. Разберись.",
+      "expected_output": "Refuses to route on the phrase 'the server lags' alone, because that symptom straddles Gate 1's ops node and its default node. Asks what the evidence points at, or states the split explicitly: host-side evidence (RAM, disk, the container, the build toolchain, asset delivery) is ss13-tgs-deploy; an expensive proc or tick budget is byond-ss13-coding with performance.md. Names the discriminating check rather than guessing a skill.",
+      "files": []
+    },
+    {
+      "id": 20,
+      "lang": "en",
+      "prompt": "The server is lagging. Sort it out.",
+      "expected_output": "Refuses to route on the phrase 'the server lags' alone, because that symptom straddles Gate 1's ops node and its default node. Asks what the evidence points at, or states the split explicitly: host-side evidence (RAM, disk, the container, the build toolchain, asset delivery) is ss13-tgs-deploy; an expensive proc or tick budget is byond-ss13-coding with performance.md. Names the discriminating check rather than guessing a skill.",
+      "files": []
+    },
+    {
+      "id": 21,
+      "lang": "ru",
+      "prompt": "Пока ничего не пиши — просто скажи, в какую папку на нашем форке должна лечь новая профессия.",
+      "expected_output": "Takes Gate 1's placement node: the ask is purely where the change should live with no code to write yet, so tgstation-modular-content is dispatched ALONE and routing STOPS — Gate 2 is skipped because placement is already the answer rather than a prefix to someone else's implementation. Does not pull in byond-ss13-coding just because the fork is a DM codebase.",
+      "files": []
+    },
+    {
+      "id": 22,
+      "lang": "en",
+      "prompt": "Don't write anything yet — just tell me which folder a new job should live in on our fork.",
+      "expected_output": "Takes Gate 1's placement node: the ask is purely where the change should live with no code to write yet, so tgstation-modular-content is dispatched ALONE and routing STOPS — Gate 2 is skipped because placement is already the answer rather than a prefix to someone else's implementation. Does not pull in byond-ss13-coding just because the fork is a DM codebase.",
+      "files": []
     }
   ]
 }
