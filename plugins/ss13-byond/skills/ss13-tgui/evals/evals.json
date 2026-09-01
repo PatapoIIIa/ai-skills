@@ -1,0 +1,61 @@
+{
+  "skill_name": "ss13-tgui",
+  "evals": [
+    {
+      "id": 1,
+      "lang": "ru",
+      "prompt": "TGUI-окно открывается белым у клиентов на Windows 7 — помоги разобраться.",
+      "expected_output": "Reads the symptom as broad browser-window failure and opens runtime-platform-triage.md BEFORE any code-level review; walks BYOND version, WebView2/IE, DPI and compatibility mode, Wine/Linux, client cache and resources, antivirus or disk blocking, and skin.dmf/winset breakage; explicitly declines to blame React render, ui_data() or payload size until the platform layer is cleared.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "lang": "en",
+      "prompt": "My tgui window opens blank on Windows 7 clients — help me triage it.",
+      "expected_output": "Reads the symptom as broad browser-window failure and opens runtime-platform-triage.md BEFORE any code-level review; walks BYOND version, WebView2/IE, DPI and compatibility mode, Wine/Linux, client cache and resources, antivirus or disk blocking, and skin.dmf/winset breakage; explicitly declines to blame React render, ui_data() or payload size until the platform layer is cleared.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "lang": "ru",
+      "prompt": "Хочу панель, где кукла персонажа отражает то, что он делает прямо сейчас. Как это сделать?",
+      "expected_output": "Recognizes a live per-player appearance request as this skill's domain from the first message and leads with the ByondUi map_view hierarchy (screen object owning a preview dummy, appearance streaming, zero ui_data payload, setDir rotation) instead of proposing base64 flattening or icon.Blend() compositing; mentions getFlatIcon or RenderIcon only as fallbacks with their caveats; opens byond-ui-and-devserver.md rather than designing from general BYOND knowledge.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "lang": "en",
+      "prompt": "I want a panel where the character doll mirrors what the character is doing live. How should this be built?",
+      "expected_output": "Recognizes a live per-player appearance request as this skill's domain from the first message and leads with the ByondUi map_view hierarchy (screen object owning a preview dummy, appearance streaming, zero ui_data payload, setDir rotation) instead of proposing base64 flattening or icon.Blend() compositing; mentions getFlatIcon or RenderIcon only as fallbacks with their caveats; opens byond-ui-and-devserver.md rather than designing from general BYOND knowledge.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "lang": "ru",
+      "prompt": "Наш интерфейс тянет картинки по хардкоженым путям icons/... Почему это плохо и как правильно?",
+      "expected_output": "Explains that hardcoded paths bypass ASSET_TRANSPORT and break under webroot/ASSET_CDN_* deployments; prescribes a /datum/asset (simple, namespaced when CSS uses relative url(...), or spritesheet for high-cardinality catalogs) returned from ui_assets() and referenced through resolveAsset()/get_url_mappings()/SSassets.transport.get_asset_url(); notes what should NOT be migrated (BYOND game resources, per-change dynamic photos, live previews which belong to map_view); registers only the files the interface owns instead of a catch-all asset datum.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "lang": "en",
+      "prompt": "Our interface pulls images from hardcoded icons/... paths. Why is that bad and what is the right way?",
+      "expected_output": "Explains that hardcoded paths bypass ASSET_TRANSPORT and break under webroot/ASSET_CDN_* deployments; prescribes a /datum/asset (simple, namespaced when CSS uses relative url(...), or spritesheet for high-cardinality catalogs) returned from ui_assets() and referenced through resolveAsset()/get_url_mappings()/SSassets.transport.get_asset_url(); notes what should NOT be migrated (BYOND game resources, per-change dynamic photos, live previews which belong to map_view); registers only the files the interface owns instead of a catch-all asset datum.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "lang": "ru",
+      "prompt": "Отревьюй этот tgui-интерфейс: там 1200 строк SCSS и куча самописных кэшей.",
+      "expected_output": "Opens review-playbooks.md for the refactor/broad-review order and optionally runs scripts/tgui_smell_scan.py as a lead generator rather than a linter; judges each adopted component by whether it DELETES markup, CSS or behaviour; demands that every cache be justified by measured cost; flags leftover measurement scaffolding (temporary loggers, render counters, obsolete base64/thumbnail caches) for removal; keeps SCSS proportional and reuses the shared theme base instead of a one-off palette.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "prompt": "Review this tgui interface — it has 1200 lines of SCSS and a pile of hand-rolled caches.",
+      "expected_output": "Opens review-playbooks.md for the refactor/broad-review order and optionally runs scripts/tgui_smell_scan.py as a lead generator rather than a linter; judges each adopted component by whether it DELETES markup, CSS or behaviour; demands that every cache be justified by measured cost; flags leftover measurement scaffolding (temporary loggers, render counters, obsolete base64/thumbnail caches) for removal; keeps SCSS proportional and reuses the shared theme base instead of a one-off palette.",
+      "files": []
+    }
+  ]
+}

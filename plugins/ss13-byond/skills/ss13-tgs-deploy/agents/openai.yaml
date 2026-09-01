@@ -1,0 +1,4 @@
+interface:
+  display_name: "SS13 TGS Deployment"
+  short_description: "Deploy and troubleshoot an SS13 server on TGS in Docker"
+  default_prompt: "Use $ss13-tgs-deploy for this SS13 hosting task: work the deployment checklist in order (Docker and the TGS container, instance creation in Host Write mode, EventScripts, repository clone, BYOND version from dependencies.sh rather than .tgs.yml, game config in Configuration/GameStaticFiles, first deploy, nginx asset CDN with mandatory CORS, DreamDaemon), check RAM and disk before the first build, treat log_write runtimes plus 404s on the bare CDN root as a non-loading librust_g.so and verify it with ldd, hand DM compile errors to byond-ss13-coding and interface rendering to ss13-tgui, and PROPOSE every command that touches the live host rather than running it unasked."

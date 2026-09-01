@@ -1,0 +1,4 @@
+interface:
+  display_name: "/tg/station Modular Content"
+  short_description: "Place fork content so it survives every upstream re-sync"
+  default_prompt: "Use $tgstation-modular-content to decide where this change goes on a fork that tracks upstream /tg/station: find the ACTIVE modular root and its override sub-layout, obey the fork's own modular readme over any general rule, learn how new files get compiled in (.dme include list or per-module aggregator), copy neighbouring modules, pick the seam by re-opening types rather than editing upstream files, keep defines/icons/sounds/maps out of upstream paths, and stop and ask when no modular seam reaches the change instead of editing upstream silently."

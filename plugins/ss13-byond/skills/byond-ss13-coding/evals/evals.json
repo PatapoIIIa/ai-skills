@@ -1,0 +1,61 @@
+{
+  "skill_name": "byond-ss13-coding",
+  "evals": [
+    {
+      "id": 1,
+      "lang": "ru",
+      "prompt": "Добавь компонент, который регенерирует носителя каждые 5 секунд, и корректно очисти его при удалении.",
+      "expected_output": "Reads the repo's local instructions first, fingerprints the codebase family before assuming tg idioms, locates the real /datum/component definition and the parent chain, copies a recently-touched neighbouring component rather than an old one, uses the existing mechanism (component + processing subsystem or timer) instead of a new abstraction, pairs every RegisterSignal with an UnregisterSignal and every stored timer id with a deletion in Destroy(), makes process() frame-independent via seconds_per_tick/delta_time, references procs through PROC_REF, and closes by naming the checks it did NOT run rather than claiming a compile.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "lang": "en",
+      "prompt": "Add a component that regenerates the wearer every 5 seconds and clean it up properly on deletion.",
+      "expected_output": "Reads the repo's local instructions first, fingerprints the codebase family before assuming tg idioms, locates the real /datum/component definition and the parent chain, copies a recently-touched neighbouring component rather than an old one, uses the existing mechanism (component + processing subsystem or timer) instead of a new abstraction, pairs every RegisterSignal with an UnregisterSignal and every stored timer id with a deletion in Destroy(), makes process() frame-independent via seconds_per_tick/delta_time, references procs through PROC_REF, and closes by naming the checks it did NOT run rather than claiming a compile.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "lang": "ru",
+      "prompt": "Проверь этот DM-патч на риски hard delete.",
+      "expected_output": "Anchors on style-and-review.md and adds ss13-architecture.md because the task triggers lifecycle/qdel; walks the acquisition/release pairing (signals, timers, global list entries, references held in Destroy()), checks for re-validation after every sleep/do_after/async gap, verifies signal handlers do not sleep, and reports findings by severity without claiming the patch was compiled or run.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "lang": "en",
+      "prompt": "Review this DM patch for hard-delete risks.",
+      "expected_output": "Anchors on style-and-review.md and adds ss13-architecture.md because the task triggers lifecycle/qdel; walks the acquisition/release pairing (signals, timers, global list entries, references held in Destroy()), checks for re-validation after every sleep/do_after/async gap, verifies signal handlers do not sleep, and reports findings by severity without claiming the patch was compiled or run.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "lang": "ru",
+      "prompt": "Этот proc жрёт тик на большом сервере, оптимизируй его.",
+      "expected_output": "Anchors on performance.md; argues any claimed win from call frequency times data size rather than asserting it, checks list semantics (for-over-a-copy), hoists allocations out of loops, considers CHECK_TICK/TICK_CHECK where the codebase has them, refuses to add a cache without a demonstrated cost, avoids drive-by refactors of untouched code, and states plainly that no measurement was executed in this session unless one actually was.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "lang": "en",
+      "prompt": "This proc is eating the tick on a busy server — optimize it.",
+      "expected_output": "Anchors on performance.md; argues any claimed win from call frequency times data size rather than asserting it, checks list semantics (for-over-a-copy), hoists allocations out of loops, considers CHECK_TICK/TICK_CHECK where the codebase has them, refuses to add a cache without a demonstrated cost, avoids drive-by refactors of untouched code, and states plainly that no measurement was executed in this session unless one actually was.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "lang": "ru",
+      "prompt": "Перенеси эту фичу из tgstation в наш форк на CEV-Eris.",
+      "expected_output": "Anchors on repository-profiles.md; fingerprints the target fork (project .dme, defines layout, signal penetration) before porting, refuses to force tg patterns onto an architecture that rejects them (Eris barely uses signals), applies the tier precedence local repo rules > fork architecture > tg conventions, rewrites the feature in the target's own idiom rather than copying upstream verbatim, and does not convert untouched New() to Initialize() along the way.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "prompt": "Port this feature from tgstation into our CEV-Eris fork.",
+      "expected_output": "Anchors on repository-profiles.md; fingerprints the target fork (project .dme, defines layout, signal penetration) before porting, refuses to force tg patterns onto an architecture that rejects them (Eris barely uses signals), applies the tier precedence local repo rules > fork architecture > tg conventions, rewrites the feature in the target's own idiom rather than copying upstream verbatim, and does not convert untouched New() to Initialize() along the way.",
+      "files": []
+    }
+  ]
+}

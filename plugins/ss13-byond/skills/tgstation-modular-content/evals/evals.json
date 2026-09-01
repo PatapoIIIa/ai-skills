@@ -1,0 +1,61 @@
+{
+  "skill_name": "tgstation-modular-content",
+  "evals": [
+    {
+      "id": 1,
+      "lang": "ru",
+      "prompt": "Добавь новый предмет профессии на нашем форке, не трогая upstream-файлы.",
+      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and using git log -1 per root when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "lang": "en",
+      "prompt": "Add a new job item on our fork without touching upstream files.",
+      "expected_output": "Finds the ACTIVE modular root first (listing the top level, and using git log -1 per root when a fork has accumulated several generations), finds the override sub-layout (path-mirroring folder for upstream extensions vs modules/<feature>/ for net-new content), reads the modular root's own readme/module_template and obeys it over this skill, learns how files get compiled in (.dme include list vs a per-module aggregator), copies 2-3 neighbouring modules, and places the item as a new subtype in a self-contained module folder with its own assets referenced by full modular path.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "lang": "ru",
+      "prompt": "Нужно поменять одну строчку в апстримном proc. Скопировать его целиком в модульный файл — нормально?",
+      "expected_output": "Refuses the whole-proc copy explicitly: it silently shadows upstream, so later upstream improvements to that proc vanish with nobody noticing. Offers re-opening the proc and wrapping around . = ..() as the correct seam; if wrapping genuinely cannot reach the change, treats that as a stop-and-ask boundary and presents the options (tagged upstream edit in the fork's own edit-comment grammar, an upstream PR, or a design change) for the human to choose rather than picking one silently.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "lang": "en",
+      "prompt": "I need to change one line in an upstream proc. Is copying the whole proc into a modular file fine?",
+      "expected_output": "Refuses the whole-proc copy explicitly: it silently shadows upstream, so later upstream improvements to that proc vanish with nobody noticing. Offers re-opening the proc and wrapping around . = ..() as the correct seam; if wrapping genuinely cannot reach the change, treats that as a stop-and-ask boundary and presents the options (tagged upstream edit in the fork's own edit-comment grammar, an upstream PR, or a design change) for the human to choose rather than picking one silently.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "lang": "ru",
+      "prompt": "Надо поставить несколько объектов на существующую станционную карту нашего форка.",
+      "expected_output": "Refuses to edit the upstream .dmm (git cannot merge it; a conflict is unrecoverable) and routes to the fork's modular map system instead: an automapper config entry naming a template .dmm, its required base map and placement coordinates, or the simple area-spawn datum for a single object. The template and the config entry are modular; the base map stays untouched.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "lang": "en",
+      "prompt": "We need to place a few objects on an existing station map in our fork.",
+      "expected_output": "Refuses to edit the upstream .dmm (git cannot merge it; a conflict is unrecoverable) and routes to the fork's modular map system instead: an automapper config entry naming a template .dmm, its required base map and placement coordinates, or the simple area-spawn datum for a single object. The template and the config entry are modular; the base map stays untouched.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "lang": "ru",
+      "prompt": "Посмотри, правильно ли оформлен этот уже сделанный модульный PR на форке.",
+      "expected_output": "Reviews against the anti-pattern list rather than rewriting: whole-proc copies shadowing upstream, edited upstream binaries or .dmm, override files whose path does not mirror the upstream counterpart, cross-file defines declared in a single module file instead of the shared late-loading defines folder, new .dm files missing from the include list or aggregator (compiles locally, fails CI), undeclared cross-module dependencies, untagged upstream edits, and iteration scaffolding left behind after a modular path was replaced.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "prompt": "Check whether this already-written modular PR on our fork is done properly.",
+      "expected_output": "Reviews against the anti-pattern list rather than rewriting: whole-proc copies shadowing upstream, edited upstream binaries or .dmm, override files whose path does not mirror the upstream counterpart, cross-file defines declared in a single module file instead of the shared late-loading defines folder, new .dm files missing from the include list or aggregator (compiles locally, fails CI), undeclared cross-module dependencies, untagged upstream edits, and iteration scaffolding left behind after a modular path was replaced.",
+      "files": []
+    }
+  ]
+}

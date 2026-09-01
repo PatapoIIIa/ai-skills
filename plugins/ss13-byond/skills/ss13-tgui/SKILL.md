@@ -1,6 +1,6 @@
 ---
 name: "ss13-tgui"
-description: "Use only for SS13 TGUI/web UI work: implementing, reviewing, simplifying, or debugging a tgui interface; DM procs ui_interact/tgui_interact/ui_data/ui_static_data/ui_assets/ui_act/ui_state; SStgui lifecycle; files under tgui interfaces/routes/layouts/components/SCSS; tgui-core or in-tree tgui components; BYOND browser bridge work involving ByondUi, winset/winget/callByond, config.window/config.ref, embedded maps/camera controls; browser asset cache/CDN delivery involving /datum/asset, asset/mappings, resolveAsset, get_asset_url, ASSET_TRANSPORT webroot, or ASSET_CDN_*; tgui dev-server/HMR; duplicate tgui windows; blank/white TGUI windows, WebView2/IE/DPI/Wine runtime triage, skin.dmf/window-control breakage; first-load/per-update tgui performance; or overengineered tgui refactors. Do not use for ordinary SS13 DM gameplay/content/systems work, mobs/items/icons/balance/admin verbs/database/mapping, or generic BYOND code unless the request or changed files also touch TGUI or BYOND browser UI integration."
+description: "Use only for SS13 TGUI/web UI work: implementing, reviewing, or debugging a tgui interface; ui_interact/tgui_interact/ui_data/ui_static_data/ui_assets/ui_act/ui_state; SStgui lifecycle; tgui interfaces/routes/layouts/components/SCSS; tgui-core or in-tree components; the BYOND browser bridge (ByondUi, winset/winget/callByond, config.window/config.ref, embedded maps/camera controls); browser asset cache/CDN delivery (/datum/asset, resolveAsset, get_asset_url, ASSET_TRANSPORT webroot, ASSET_CDN_*); tgui dev-server/HMR; duplicate or blank/white tgui windows; WebView2/IE/DPI/Wine runtime triage; skin.dmf/window-control breakage; first-load or per-update tgui performance; overengineered tgui refactors. Do not use for ordinary SS13 DM gameplay, content, or systems work (mobs, items, icons, balance, admin verbs, database, mapping) or generic BYOND code, unless the request or changed files also touch TGUI or BYOND browser UI integration."
 ---
 
 # SS13 TGUI Interfaces
@@ -161,24 +161,35 @@ Chat-embedded components are a documented protocol, not ad-hoc HTML (`tgui/docs/
 
 Pick the closest authority: **local framework source and neighboring interfaces > same TGUI generation (tgui-core vs in-tree) > current /tg/ documentation and source > other external guides.** Search the working repo first: a neighbor in the current codebase wins even over /tg/. If local documentation is absent or incomplete, use the current `/tg/` TGUI docs as the canonical modern fallback, then verify that the fork has not renamed or diverged from the relevant API.
 
-## Reference files (progressive disclosure)
+## Reference dispatch
 
-- `references/source-corpus.md` — comparative map across tgstation, Vanderlin, cmss13, BandaStation: what was sampled, and which rules are universal vs fork-local. **Read first when unsure how far a rule generalizes.**
-- `references/tgui-workflow.md` — backend/frontend split, the data-vs-presentation contract, full review checklist with rationale.
-- `references/performance-and-lifecycle.md` — source-grounded lifecycle (autoupdate loop, `on_act_message`, `update_uis` fan-out, `update_static_data`), first-load vs per-update delay, when caching is and isn't warranted.
-- `references/runtime-platform-triage.md` — blank/white TGUI windows, WebView2/IE, DPI scaling, Wine/Linux, client cache/resources, antivirus/disk blocking, `skin.dmf`, and runtime `winset` failures. **Read before code-level performance review when the symptom is broad browser-window failure.**
-- `references/components-and-style.md` — element choice in depth (`Box`/`Button`/`Section`/`Tooltip` contracts, what careless tag swaps lose, when raw HTML is right), component conventions (tgui-core vs in-tree), typed `Data` contract, SCSS/theming/scaling.
-- `references/byond-ui-and-devserver.md` — `ByondUi`, `winset`/`winget`/`callByond`, embedded map/camera controls (incl. the map_view live-preview recipe), legacy route registration, and old in-tree tgui dev-server workflow. **Read when the task mentions BYOND controls, maps inside tgui, routes, or dev-server/HMR.**
-- `references/embedded-map-geometry.md` — the geometry contract for tgui-embedded secondary maps (the unstable engine-chosen canvas and how to PIN it with a background frame, `zoom` as the sizing knob, canvas-center viewport, screen_loc rules), the live-appearance vs runtime-icon repaint reality, measurement instruments, two-artifact build fingerprinting, and the catalog of field-proven false conclusions with prevention rules (build-scoped constants included). **Read whenever embedded map content is tiny/off-center/invisible, or field reports contradict each other.**
-- `references/byond-client-api.md` — the applied BYOND↔TGUI catalog distilled from the official BYOND Reference + /tg/'s bridge: the three bridge layers (tgui / tgui_window popups / raw browse-output-Topic), the full `Byond` JS object surface (incl. the 2048-char href limit and XHR fallback, `__number__` JSON reviver, strictMode FatalError logging), native 516 `BYOND` object vs tgui's `Byond`, `byondStorage` (hub/server/domain) persistence, calling JS from DM via `output("...", "browser:func")`, skin control/parameter cheat sheet (window/browser/map/output/input/global params), and client dot-commands. **Read when touching the DM↔JS bridge, custom popups, skin params, or client persistence.**
-- `references/client-storage.md` — client-side persistence across fork generations (IndexedDB → byondstorage → iframe+IndexedDB): the shared disk-json hitch class, the unnamespaced-iframe-origin trap, migration hygiene, diagnosis map, upstream PR lineage. **Read when chat settings/history don't save, a client hitches every 10–30 s while the server is healthy, chat crashes after server-hopping, or a storage backport is planned.**
-- `references/review-playbooks.md` — task-specific review order for performance, lifecycle/backend, frontend/components, appearance pickers, BYOND controls, and refactors. **Read for broad review requests or when asked to find bad practices.**
-- `references/case-study-overengineered-interface.md` — anonymized, reusable lessons from a reviewed TGUI redesign.
-- `references/refactor-timeline.md` — anonymized progression from bespoke machinery to framework-native patterns.
+Eleven reference files exist; a task needs two or three. Start from exactly **one anchor**, chosen by the task's primary shape. Add a conditional file only when its trigger is actually present in the diff or the question — not because it "might be relevant." A task that genuinely spans domains earns its extra files one trigger at a time.
 
-Bundled script: `scripts/tgui_smell_scan.py` is a read-only first-pass scanner for broad reviews. Run it on changed TGUI files or a narrow directory, then inspect each hit against the references above.
+**Anchor — pick one:**
 
-For blank/white window reports, read `references/runtime-platform-triage.md` before performance review. For code-level performance reviews, read `references/performance-and-lifecycle.md`; it includes the lifecycle rules plus concrete bad/good patterns from appearance preview and picker work.
+| Task's primary shape | Anchor |
+|---|---|
+| Blank/white windows, all browser popups failing, platform or client-runtime symptom | [references/runtime-platform-triage.md](references/runtime-platform-triage.md) |
+| Broad review, "find the bad practices", judging a refactor | [references/review-playbooks.md](references/review-playbooks.md) |
+| Implementing or changing an interface — the backend/frontend split and data-vs-presentation contract | [references/tgui-workflow.md](references/tgui-workflow.md) |
+| "It's slow" — first-load vs per-update latency, autoupdate/`update_uis` cost, whether to cache | [references/performance-and-lifecycle.md](references/performance-and-lifecycle.md) |
+| "Does this rule hold on our fork?" — how far a pattern generalizes | [references/source-corpus.md](references/source-corpus.md) |
+
+**Conditional add-ons — open only when this specific trigger fires:**
+
+| Trigger actually present in the diff/question | Add |
+|---|---|
+| `ByondUi`, `winset`/`winget`/`callByond`, skin params, embedded map or camera controls, legacy routes, dev-server/HMR | [references/byond-ui-and-devserver.md](references/byond-ui-and-devserver.md) |
+| Embedded map content is tiny, off-center, or invisible — or two field reports contradict each other | [references/embedded-map-geometry.md](references/embedded-map-geometry.md) |
+| The DM↔JS bridge itself: custom `browse` popups, the `Byond` JS surface, `byondStorage`, client dot-commands, `RenderIcon`/icon delivery | [references/byond-client-api.md](references/byond-client-api.md) |
+| Chat settings or history not saving, client hitching every 10–30 s while the server is healthy, chat breaking after server-hopping, a storage backport | [references/client-storage.md](references/client-storage.md) |
+| Choosing between `Box`/`Button`/`Section`/`Tooltip`, a proposed tag swap, SCSS/theming scope, the typed `Data` contract | [references/components-and-style.md](references/components-and-style.md) |
+
+**Case material — read only when a comparable situation is live**, never as background: [references/case-study-overengineered-interface.md](references/case-study-overengineered-interface.md) (a reviewed redesign that overshot) and [references/refactor-timeline.md](references/refactor-timeline.md) (the progression from bespoke machinery to framework-native patterns). Both are anonymized.
+
+**Bundled script:** `scripts/tgui_smell_scan.py` is a read-only first-pass scanner for broad reviews. Run it on changed TGUI files or a narrow directory, then inspect each hit against the anchor above. Its hits are leads, not linter failures.
+
+Two orderings override the table when they collide with it, because getting them backwards wastes the most time: for a blank/white-window report, triage the platform **before** any code-level performance review; and for appearance-preview work, the map_view hierarchy in "Appearance preview pickers" above comes before any reference file.
 
 ## External references (summarize and link, don't copy; all version-sensitive)
 

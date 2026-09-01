@@ -1,12 +1,12 @@
-# TGS в Docker: контейнер, инстанс, персистентность
+# TGS in Docker: container, instance, persistence
 
-## Установка Docker
+## Installing Docker
 
-Стандартно: `curl -fsSL https://get.docker.com | sh` (ставит Engine + compose-плагин).
+Nothing special: `curl -fsSL https://get.docker.com | sh` (installs Engine plus the compose plugin).
 
-## Контейнер tgstation-server
+## The tgstation-server container
 
-Рабочая конфигурация (эквивалент того, что крутится на исходном VPS):
+A working configuration (equivalent to what runs on the original VPS):
 
 ```bash
 mkdir -p /srv/tgs/{config,instances,logs}
@@ -23,64 +23,43 @@ docker run -d --name tgs --restart unless-stopped \
   tgstation/server:latest
 ```
 
-Почему так:
+Why it looks like this:
 
-- `5000` — HTTP API и веб-панель (`/app/`), `1337` — игровой порт DreamDaemon.
-  Каждый дополнительный инстанс = ещё один игровой порт; docker не умеет
-  добавлять порты на живом контейнере, так что если планируешь несколько
-  инстансов — прокинь диапазон сразу (`-p 1337-1340:1337-1340`).
-- Бинды на хост означают: всё состояние (конфиг TGS, инстансы, логи) живёт в
-  `/srv/tgs` и переживает пересоздание контейнера. Это же даёт nginx прямой
-  доступ к webroot-ассетам (см. nginx-assets.md).
-- Путь инстанса внутри контейнера (`/tgs_instances/...`) и на хосте
-  (`/srv/tgs/instances/...`) — это одна и та же директория с разными именами.
-  Помни об этом: в игровом config.txt пути пишутся **контейнерные**, в
-  nginx — **хостовые**.
+- `5000` is the HTTP API and web panel (`/app/`); `1337` is the DreamDaemon game port. Every additional instance means another game port, and docker cannot add ports to a running container — so if several instances are planned, publish the range up front (`-p 1337-1340:1337-1340`).
+- The host binds mean all state (TGS config, instances, logs) lives in `/srv/tgs` and survives recreating the container. They are also what gives nginx direct access to the webroot assets (see nginx-assets.md).
+- The instance path inside the container (`/tgs_instances/...`) and on the host (`/srv/tgs/instances/...`) are the same directory under two names. Keep that straight: the game's config.txt takes the **container** path, nginx takes the **host** path.
 
-## Первый вход и безопасность
+## First login and security
 
-Панель: `http://<ip>:5000/app/`. Дефолтный логин TGS:
-`Admin` / `ISolemlySwearToDeleteTheDataDirectory`.
+Panel: `http://<ip>:5000/app/`. The TGS default login is `Admin` / `ISolemlySwearToDeleteTheDataDirectory`.
 
-**Сразу смени пароль** (Administration → Users): порт 5000 обычно открыт
-в интернет, дефолтный пароль общеизвестен.
+**Change the password immediately** (Administration → Users): port 5000 is usually exposed to the internet and the default password is public knowledge.
 
-## Создание инстанса
+## Creating the instance
 
-Через панель (можно и через REST API на том же порту, но панель проще):
+Through the panel (the REST API on the same port also works, but the panel is simpler):
 
-1. Instances → Create. Имя, путь `/tgs_instances/<Имя>` (путь должен быть под
-   `ValidInstancePaths`). После создания инстанс переводится в Online.
-2. **Configuration Mode → Host Write** — критично. Это позволяет редактировать
-   `Configuration/` инстанса напрямую с хоста (по биндам), а не только через
-   панель.
-3. Repository → clone нужного форка (для Vibelin:
-   `https://github.com/trueroguan/Vibelin`).
-4. Engine → выбрать BYOND-версию из `dependencies.sh` репо → Install.
-   TGS сам скачает и распакует BYOND.
-5. Deployment: `.dme` TGS находит сам, если он один в корне репо.
+1. Instances → Create. Give it a name and the path `/tgs_instances/<Name>` (which must sit under `ValidInstancePaths`). Once created, bring the instance Online.
+2. **Configuration Mode → Host Write** — this one matters. It is what allows the instance's `Configuration/` to be edited directly from the host through the binds, rather than only through the panel.
+3. Repository → clone the fork you are deploying. Identify it by repository name (for example the Vibelin fork of Vanderlin) and paste the clone URL the fork's owner publishes; this skill does not hardcode anyone's account URL.
+4. Engine → pick the BYOND version from the repo's `dependencies.sh` → Install. TGS downloads and unpacks BYOND itself.
+5. Deployment: TGS finds the `.dme` on its own as long as there is exactly one at the repo root.
 
-## Персистентность: что где живёт
+## Persistence: what lives where
 
-Структура инстанса (`/srv/tgs/instances/<Имя>/` на хосте):
+Instance layout (`/srv/tgs/instances/<Name>/` on the host):
 
-| Директория | Что это | Переживает деплой? |
+| Directory | What it is | Survives a deploy? |
 |---|---|---|
-| `Game/Live/` | Текущая работающая сборка | **Нет** — заменяется каждый деплой |
-| `Repository/` | Git-клон | Да |
-| `Configuration/GameStaticFiles/` | Оверлей поверх игровой сборки: `config/`, `data/` | **Да** — линкуется в каждый новый деплой |
-| `Configuration/EventScripts/` | Хуки деплоя (PreCompile.sh и т.д.) | Да |
+| `Game/Live/` | The currently running build | **No** — replaced on every deploy |
+| `Repository/` | The git clone | Yes |
+| `Configuration/GameStaticFiles/` | Overlay applied on top of the game build: `config/`, `data/` | **Yes** — linked into every new deploy |
+| `Configuration/EventScripts/` | Deploy hooks (PreCompile.sh and friends) | Yes |
 
-Практическое следствие: **игровой конфиг редактируй только в
-`Configuration/GameStaticFiles/config/`**. Первый раз наполни его копией
-`config/` из репозитория, затем правь под сервер (config.txt: `HUB`,
-`SERVERNAME`, asset CDN-ключи, `GITHUBURL`, и т.д.). Всё, что поправишь в
-`Game/Live/config`, молча исчезнет при следующем деплое — эта ловушка
-ловилась на практике.
+The practical consequence: **edit the game config only in `Configuration/GameStaticFiles/config/`.** Seed it once with a copy of the repo's `config/`, then adjust it for this server (config.txt: `HUB`, `SERVERNAME`, asset CDN keys, `GITHUBURL`, and so on). Anything edited in `Game/Live/config` disappears silently at the next deploy — a trap caught in practice, not in theory.
 
-## Диагностика
+## Diagnostics
 
-- Логи TGS: `/srv/tgs/logs/` на хосте.
-- Логи деплоя и консоль DreamDaemon — в панели (вкладки Deployment /
-  DreamDaemon инстанса).
-- Быстрая проверка порта: `nc -zv <ip> 1337`.
+- TGS logs: `/srv/tgs/logs/` on the host.
+- Deploy logs and the DreamDaemon console: in the panel, on the instance's Deployment and DreamDaemon tabs.
+- Quick port check: `nc -zv <ip> 1337`.

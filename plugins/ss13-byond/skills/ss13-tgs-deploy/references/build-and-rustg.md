@@ -1,63 +1,47 @@
-# Пайплайн деплоя: EventScripts, rust-g (glibc!), tgui
+# The deploy pipeline: EventScripts, rust-g (glibc!), tgui
 
 ## EventScripts
 
-TGS перед/после компиляции запускает скрипты из
-`Configuration/EventScripts/`. За основу берутся `tools/tgs_scripts/*.sh` из
-репозитория, но их надо адаптировать (в assets/ этого скилла лежат рабочие
-версии с Vibelin):
+Before and after compilation TGS runs the scripts in `Configuration/EventScripts/`. Start from the repo's own `tools/tgs_scripts/*.sh`, but expect to adapt them — this skill's `assets/` holds versions that actually worked on a Vibelin deployment:
 
-- `InstallDeps.sh` — apt-зависимости (i386-библиотеки для 32-битного BYOND,
-  libssl:i386, zlib:i386, git, curl) + rustup. Вызывается из двух других.
-- `PreCompile.sh` — главный: подхватывает `dependencies.sh` из репо
-  (версии BYOND/rust-g/Bun), ставит Bun, добывает `librust_g.so`,
-  собирает tgui.
-- `WatchdogLaunch.sh` — просто перепроверяет зависимости при каждом
-  старте сервера.
+- `InstallDeps.sh` — apt dependencies (i386 libraries for the 32-bit BYOND, libssl:i386, zlib:i386, git, curl) plus rustup. Called by the other two.
+- `PreCompile.sh` — the main one: reads `dependencies.sh` from the repo (BYOND/rust-g/Bun versions), installs Bun, obtains `librust_g.so`, and builds tgui.
+- `WatchdogLaunch.sh` — simply re-checks dependencies on every server start.
 
-Не забудь `chmod +x` на все три.
+Remember `chmod +x` on all three.
 
-## rust-g и ловушка glibc — читай перед первым деплоем
+## rust-g and the glibc trap — read before the first deploy
 
-SS13 грузит `librust_g.so` (32-битную!) в рантайме через BYOND FFI. Есть два
-способа её получить, и у обоих есть подводные камни:
+SS13 loads `librust_g.so` (the 32-bit build!) at runtime through the BYOND FFI. There are two ways to get it, and both have sharp edges.
 
-### Вариант А: prebuilt с GitHub releases
+### Option A: prebuilt from GitHub releases
 
-`https://github.com/tgstation/rust-g/releases/download/<версия>/librust_g.so`
-(версия — `RUST_G_VERSION` из `dependencies.sh`, у Vibelin — 6.1.0).
+`https://github.com/tgstation/rust-g/releases/download/<version>/librust_g.so` — the version being `RUST_G_VERSION` from `dependencies.sh` (6.1.0 on Vibelin).
 
-**Ловушка:** релизные бинарники собираются на свежей Ubuntu и требуют
-glibc 2.38/2.39. Контейнер `tgstation/server` — Debian bookworm с glibc
-**2.36**. Библиотека молча не грузится, и симптомы выглядят совсем не как
-"файл не подходит":
+**The trap:** release binaries are built on a recent Ubuntu and require glibc 2.38/2.39. The `tgstation/server` container is Debian bookworm with glibc **2.36**. The library then silently fails to load, and the symptoms look nothing like "wrong binary":
 
-- runtime'ы `log_write` и прочих rust-g-процов при старте мира;
-- `SSassets` не регистрирует ассеты → у клиентов URL ассетов генерируются
-  пустыми → тонны запросов на **голый корень** asset-CDN (`GET /` → 404
-  в access-логе nginx), tgui частично сломан.
+- `log_write` runtimes, and runtimes from other rust-g procs, as the world starts;
+- `SSassets` never registers its assets → clients generate empty asset URLs → floods of requests against the **bare root** of the asset CDN (`GET /` → 404 in the nginx access log), with tgui partly broken.
 
-**Проверка совместимости** (внутри контейнера, `libc6-i386` уже стоит после
-InstallDeps.sh):
+**Compatibility check** (inside the container; `libc6-i386` is already present once InstallDeps.sh has run):
 
 ```bash
-docker exec tgs ldd /tgs_instances/<Имя>/Game/Live/librust_g.so
-# если в выводе есть "GLIBC_2.3X not found" — бинарник не подходит
+docker exec tgs ldd /tgs_instances/<Name>/Game/Live/librust_g.so
+# "GLIBC_2.3X not found" anywhere in the output means this binary will not work
 ```
 
-### Вариант Б: сборка из исходников в контейнере (надёжный)
+### Option B: build from source inside the container (the reliable one)
 
-Собирает под glibc контейнера — несовместимости нет по построению.
-На машине с 4+ ГБ RAM это просто и занимает ~5-10 минут:
+Building against the container's own glibc removes the incompatibility by construction. On a machine with 4+ GB RAM it is straightforward and takes about 5–10 minutes:
 
 ```bash
 docker exec tgs bash -c '
   set -ex
-  # тулчейн (rustup уже стоит после InstallDeps.sh, добавляем 32-бит таргет)
+  # toolchain (rustup is already installed by InstallDeps.sh; add the 32-bit target)
   ~/.cargo/bin/rustup target add i686-unknown-linux-gnu
   apt-get install -y gcc-multilib libc6-dev-i386
-  # исходники той же версии, что в dependencies.sh
-  cd /tgs_instances/<Имя>/Configuration/EventScripts
+  # sources at exactly the version pinned in dependencies.sh
+  cd /tgs_instances/<Name>/Configuration/EventScripts
   git clone --depth 1 --branch 6.1.0 https://github.com/tgstation/rust-g
   cd rust-g
   env PKG_CONFIG_ALLOW_CROSS=1 ~/.cargo/bin/cargo build \
@@ -65,32 +49,23 @@ docker exec tgs bash -c '
 '
 ```
 
-Готовый файл: `target/i686-unknown-linux-gnu/release/librust_g.so`.
+The result lands at `target/i686-unknown-linux-gnu/release/librust_g.so`.
 
-- `PKG_CONFIG_ALLOW_CROSS=1` — иначе pkg-config откажется искать
-  i386-библиотеки (openssl) при кросс-сборке.
-- `--ignore-rust-version` — rust в контейнере может быть чуть старше/младше
-  `rust-version` крейта; для rust-g это безопасно.
-- **На машине с <4 ГБ RAM** линковку release-профиля убивает OOM-killer:
-  добавь swap/zram (см. SKILL.md) и `CARGO_BUILD_JOBS=1`.
+- `PKG_CONFIG_ALLOW_CROSS=1` — without it pkg-config refuses to look for i386 libraries (openssl) during a cross build.
+- `--ignore-rust-version` — the container's rust may be slightly older or newer than the crate's `rust-version`; for rust-g this is safe.
+- **On a machine with under 4 GB RAM** the OOM killer takes down the release-profile link step: add swap/zram (see SKILL.md) and `CARGO_BUILD_JOBS=1`.
 
-Собранную `librust_g.so` положи в `Configuration/EventScripts/` и пусть
-`PreCompile.sh` копирует её в билд вместо скачивания — приложенный
-`assets/PreCompile.sh` именно так и устроен: качает prebuilt, проверяет его
-через `ldd`, при несовместимости берёт локально собранную копию.
+Put the built `librust_g.so` in `Configuration/EventScripts/` and have `PreCompile.sh` copy it into the build instead of downloading. The bundled `assets/PreCompile.sh` is built exactly that way: it fetches the prebuilt, checks it with `ldd`, and falls back to the locally built copy when the check fails.
 
 ## tgui (Bun)
 
-Vibelin собирает tgui через Bun (версия — `BUN_VERSION` из
-`dependencies.sh`). `PreCompile.sh` ставит Bun официальным инсталлером и
-вызывает `tools/bootstrap/javascript.sh tools/build/build.ts` с
-`CBT_BUILD_MODE="TGS"`. Здесь граблей не встречено — просто нужен RAM
-(еще ~0.5-1 ГБ на первом билде, дальше кэш `TG_BOOTSTRAP_CACHE` помогает).
+Vibelin builds tgui through Bun (version from `BUN_VERSION` in `dependencies.sh`). `PreCompile.sh` installs Bun with the official installer and calls `tools/bootstrap/javascript.sh tools/build/build.ts` with `CBT_BUILD_MODE="TGS"`. No traps were hit here — it just needs RAM (another ~0.5–1 GB on the first build; after that the `TG_BOOTSTRAP_CACHE` helps).
 
-## Проверка успешного деплоя
+## Confirming a deploy actually succeeded
 
-1. В логе деплоя нет ошибок rust-g/tgui.
-2. После старта мира в консоли DreamDaemon нет runtime'ов `log_write`.
-3. `ls /srv/tgs/instances/<Имя>/webroot_assets/` — появились файлы
-   `asset.<hash>.<ext>` (значит SSassets жив и webroot-транспорт пишет).
-4. В access-логе nginx — 200-е на `/asset.*`, и **нет** потока 404 на `/`.
+Check all four; any one of them alone is not enough to call a deploy green.
+
+1. The deploy log carries no rust-g or tgui errors.
+2. After the world starts, the DreamDaemon console shows no `log_write` runtimes.
+3. `ls /srv/tgs/instances/<Name>/webroot_assets/` lists `asset.<hash>.<ext>` files — meaning SSassets is alive and the webroot transport is writing.
+4. The nginx access log shows 200s on `/asset.*` and **no** stream of 404s on `/`.

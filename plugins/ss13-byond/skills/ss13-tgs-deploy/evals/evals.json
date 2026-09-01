@@ -1,0 +1,61 @@
+{
+  "skill_name": "ss13-tgs-deploy",
+  "evals": [
+    {
+      "id": 1,
+      "lang": "ru",
+      "prompt": "Подними наш форк SS13 на чистой Ubuntu через TGS в Docker — проведи с нуля.",
+      "expected_output": "Walks the ten-step checklist in order, opening references only as each step is reached; checks RAM and disk against the hardware section BEFORE the first deploy and prescribes swap/zram on a small box; reads the BYOND version from the repo's dependencies.sh rather than .tgs.yml; sets the instance to Host Write; seeds Configuration/GameStaticFiles/config/ instead of editing Game/Live/config; and PROPOSES each command rather than executing it against the user's host on its own initiative.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "lang": "en",
+      "prompt": "Stand our SS13 fork up on a fresh Ubuntu box with TGS in Docker — walk me through it from zero.",
+      "expected_output": "Walks the ten-step checklist in order, opening references only as each step is reached; checks RAM and disk against the hardware section BEFORE the first deploy and prescribes swap/zram on a small box; reads the BYOND version from the repo's dependencies.sh rather than .tgs.yml; sets the instance to Host Write; seeds Configuration/GameStaticFiles/config/ instead of editing Game/Live/config; and PROPOSES each command rather than executing it against the user's host on its own initiative.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "lang": "ru",
+      "prompt": "На новом сервере tgui-окна пустые, а nginx сыплет 404 на голый корень. С чего начинать?",
+      "expected_output": "Recognizes the two-symptom fingerprint (log_write runtimes plus a flood of 404s on the bare CDN root) as a non-loading librust_g.so rather than an nginx problem, and checks it with ldd inside the container before touching the web server; on a glibc mismatch offers the build-from-source path with PKG_CONFIG_ALLOW_CROSS=1 and --ignore-rust-version; separately keeps the missing-CORS failure mode (assets download and are discarded, endless retry loop) as the OTHER candidate, distinguished by whether assets actually exist in webroot_assets/.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "lang": "en",
+      "prompt": "tgui windows are blank on the new server and nginx is logging a flood of 404s on the bare root. Where do I start?",
+      "expected_output": "Recognizes the two-symptom fingerprint (log_write runtimes plus a flood of 404s on the bare CDN root) as a non-loading librust_g.so rather than an nginx problem, and checks it with ldd inside the container before touching the web server; on a glibc mismatch offers the build-from-source path with PKG_CONFIG_ALLOW_CROSS=1 and --ignore-rust-version; separately keeps the missing-CORS failure mode (assets download and are discarded, endless retry loop) as the OTHER candidate, distinguished by whether assets actually exist in webroot_assets/.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "lang": "ru",
+      "prompt": "Каждый раз после деплоя мои правки в config.txt пропадают. Что не так?",
+      "expected_output": "Identifies the edits as having been made in Game/Live/config, which TGS recreates on every deploy, and moves them to Configuration/GameStaticFiles/config/, which is linked into each new deployment; explains the container-path versus host-path duality (config.txt takes container paths, nginx takes host paths) so the fix does not introduce a second bug.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "lang": "en",
+      "prompt": "My config.txt edits disappear after every deploy. What am I doing wrong?",
+      "expected_output": "Identifies the edits as having been made in Game/Live/config, which TGS recreates on every deploy, and moves them to Configuration/GameStaticFiles/config/, which is linked into each new deployment; explains the container-path versus host-path duality (config.txt takes container paths, nginx takes host paths) so the fix does not introduce a second bug.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "lang": "ru",
+      "prompt": "Деплой упал с ошибкой компиляции DM. Почини.",
+      "expected_output": "Stops at the skill's own boundary: reports that the build failed and surfaces the compiler output, then hands the code-level defect to byond-ss13-coding rather than editing .dm files to force a green deploy. Does not re-derive routing itself — byond-codemaster-controller owns that.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "prompt": "The deploy failed with a DM compile error. Fix it.",
+      "expected_output": "Stops at the skill's own boundary: reports that the build failed and surfaces the compiler output, then hands the code-level defect to byond-ss13-coding rather than editing .dm files to force a green deploy. Does not re-derive routing itself — byond-codemaster-controller owns that.",
+      "files": []
+    }
+  ]
+}
