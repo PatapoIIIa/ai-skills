@@ -32,6 +32,11 @@ claude plugin install ss13-byond@ss13-ai-skills
 - `scripts/verify_claims.py` + `plugins/*/skills/*/claims.yaml` — the claim-drift workflow. The
   YAML ships with each skill (path-free, so a subscriber can run it too); the runner is
   maintenance-only. See *Claim drift* below.
+- `scripts/render_version_table.py` — regenerates the README block between
+  `<!-- versions:start -->` / `<!-- versions:end -->`. The workflow runs it and commits
+  the result, so the public table never has to be updated by hand.
+- `.github/workflows/skill-truth.yml` — weekly CI. Runs the two network-only checkers,
+  refreshes the README table, and backs the badge at the top of the README.
 - `scripts/hooks/post-commit` — opt-in git hook that runs the drift check on a throttle.
 
 The five skills and the one contract that binds them: `byond-codemaster-controller` routes;
@@ -121,6 +126,25 @@ what `scope_repo` in `claim_links` exists for.
 (`Basic Constraints of CA cert not marked critical`), so the script falls back to `curl`, which
 verifies against a different store. Verification is never disabled; if both refuse, the run reports
 the failure. `--offline-ok` makes an unreachable network a non-finding rather than an error.
+
+### The README table is generated, the baseline is not
+
+`render_version_table.py` rewrites the README block on every CI run and commits it, so the public
+"skill's version vs reality" table is always live. It deliberately **never writes
+`version_baseline.json`**: the baseline is a human acknowledgement that an affected claim has been
+re-read, and auto-accepting it in CI would silently swallow the alert `check_versions.py` exists to
+raise. The table describes reality, the baseline records what has been accepted, and they are
+allowed to disagree — that disagreement is the finding.
+
+Consequences worth knowing:
+
+- A red badge after an upstream version bump is **correct**, not a malfunction. Clear it by
+  re-reading the affected claim and then running `check_versions.py --update`.
+- The workflow needs `contents: write` for that one commit. Nothing else in it writes.
+- No trigger loop: the push filter covers `scripts/**` and `claims.yaml` but not `README.md`, and
+  a `GITHUB_TOKEN` push does not start a workflow anyway.
+- `actions/checkout` leaves a detached HEAD on push and schedule events, so the commit step pushes
+  to `HEAD:${{ github.ref_name }}` explicitly.
 
 ## Claim drift — the skills assert facts that expire
 
