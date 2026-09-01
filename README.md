@@ -16,9 +16,20 @@ claude plugin install ss13-byond@ss13-ai-skills
 
 Внутри Claude Code — то же самое через `/plugin marketplace add PatapoIIIa/ai-skills`, затем `/plugin install ss13-byond@ss13-ai-skills`.
 
-**Про обновления.** В манифесте намеренно не задано поле `version`: версией считается git SHA, поэтому вы всегда получаете актуальный коммит ветки по умолчанию — без ручного повышения версий с моей стороны и без переустановки с вашей. Обновить прямо сейчас: `/plugin marketplace update ss13-ai-skills`.
+**Про обновления.** В манифесте намеренно не задано поле `version`: версией считается git SHA, поэтому вы всегда получаете актуальный коммит ветки по умолчанию — без ручного повышения версий с моей стороны. Как обновиться — раздел ниже.
 
-*On updates: `version` is deliberately omitted from the manifest, so the git SHA acts as the version and you always track the default branch's latest commit. Force a refresh with `/plugin marketplace update ss13-ai-skills`.*
+*On updates: `version` is deliberately omitted from the manifest, so the git SHA acts as the version and you always track the default branch's latest commit. How to update — see below.*
+
+## Обновление / Updating
+
+```bash
+claude plugin marketplace update ss13-ai-skills
+claude plugin update ss13-byond@ss13-ai-skills
+```
+
+Внутри Claude Code — `/plugin marketplace update ss13-ai-skills`, затем `/plugin update ss13-byond@ss13-ai-skills`. Первая команда обновляет каталог маркетплейса, вторая ставит новую версию плагина — нужны обе. Автоматически, без этих команд, обновление не приходит.
+
+*Inside Claude Code — `/plugin marketplace update ss13-ai-skills`, then `/plugin update ss13-byond@ss13-ai-skills`. The first refreshes the marketplace catalog, the second installs the new plugin version — both are required. Nothing updates automatically without running them.*
 
 ## Дерево зависимостей / Dependency tree
 

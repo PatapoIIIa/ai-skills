@@ -69,7 +69,7 @@ claude plugin marketplace add PatapoIIIa/ai-skills
 claude plugin install ss13-byond@ss13-ai-skills
 ```
 
-Install the whole set rather than picking skills apart: the controller routes to the others by name and degrades if they are missing. The manifest deliberately omits `version`, so you track the default branch's latest commit; force a refresh with `/plugin marketplace update ss13-ai-skills`.
+Install the whole set rather than picking skills apart: the controller routes to the others by name and degrades if they are missing. The manifest deliberately omits `version`, so you track the default branch's latest commit; for updates, see the "Обновление / Updating" section in [README.md](../README.md).
 
 For agents without plugin support, take the individual skill folder from `plugins/ss13-byond/skills/` and add it to your agent's skill storage by hand.
 
