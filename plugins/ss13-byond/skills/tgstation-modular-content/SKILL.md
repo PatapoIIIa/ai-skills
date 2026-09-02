@@ -29,15 +29,20 @@ The *concepts* below are stable across /tg/ forks; the *folder names, include me
    for d in modular*/; do echo "$(git rev-list --count HEAD -- "$d") $d"; done | sort -rn
    ```
 
-   Add to the top row **when the top row actually leads** — roughly a 2× margin over the runner-up. **When it does not, do not pick the largest of several small numbers.** A squashed or re-initialised repository has no usable history: one fork measured 2026-09-01 carried six roots whose counts were 3/2/2/1/1/1 across a 32-commit history, and its **`.dm` file** counts (74/66/26/18/13/8 — count `*.dm`, not every file; counting everything gives 137/129/111/106/34/26 and a different order) were no more decisive.
+   Add to the top row **when the top row actually leads** — roughly a 2× margin over the runner-up. **When it does not, do not pick the largest of several small numbers.** A squashed or re-initialised repository has no usable history: one fork measured 2026-09-01 carried six roots whose counts were 3/2/2/1/1/1 across a 32-commit history, and its `.dm` file counts were no more decisive. (When you do count files, count `*.dm` — counting *every* file inflates each root by its assets and can reorder them outright.)
 
-   **Fallback when the count is inconclusive: ask the project file what actually compiles.** Files on disk can be dead; an `#include` is load-bearing. On that same six-root fork the `.dme` separated them where nothing else did:
+   **Fallback when the count is inconclusive: ask the project file what actually compiles.** A file on disk can be dead; an `#include` is load-bearing. Rank by includes instead:
 
    ```bash
    for d in modular*/; do n="${d%/}"; echo "$(grep -ciE "^#include \"$n[\/]" *.dme) $n"; done | sort -rn
    ```
 
-   It returned 70 / 63 / 13 / 8 / 3 / 2 against file counts of 74 / 66 / 13 / 8 / 18 / 26 — note the last two invert: `modular_helmsguard` ships 26 `.dm` files but only **2** of them are included, and `modular_stonehedge` 18 files for **3** includes. Both rank mid-table by size and are near-dead in reality. That still left no 2× winner at the top, but it eliminated four of six candidates on evidence, which turns “which of these six?” into a far better question.
+   Measured on a ten-root roguetown-lineage fork (27k commits, 2026-09-01), this separates three
+   kinds of root that `ls` cannot tell apart: **live** (`modular` 128 files / 126 includes,
+   `modular_azurepeak` 64 / 64), **abandoned in place** (`modular_helmsguard` **24 files but 1
+   include** — mid-table by size, near-dead in reality), and **empty shells** (three roots with 0
+   files and 0 includes that still show up in a directory listing). Only the include column
+   distinguishes the second kind, and that is the kind that will waste your afternoon.
 
    **Mind the separator.** SS13 `.dme` files are Windows-authored and use backslashes (`modular\code\...`), so a grep for `modular/` silently returns zero and reads as “nothing is included”. Match both, as the command above does.
 

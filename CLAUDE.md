@@ -223,6 +223,12 @@ Check types: `paths_exist`, `paths_absent` (both glob), `grep` (with `min_count`
 letting an old fork's lag register as the convention changing; use `missing_key: skip` where a fork
 that never adopted something is out of scope rather than a counter-example.
 
+**Excluding a checkout.** `--exclude NAME` (repeatable) drops a folder from the scan. It exists for
+dead, archived or otherwise unrepresentative forks: a squashed fork-of-a-fork nobody maintains will
+DRIFT forever against heuristics that only claim to hold on live repositories, and a permanent red
+nobody acts on is worse than no check at all. It is a **flag, not a `claims.yaml` field**, on
+purpose — which clones sit on this disk is machine state, and `claims.yaml` ships to subscribers.
+
 **Scheduling — weekly or every 10 commits, whichever comes first.** The triggers are OR'd:
 
 ```

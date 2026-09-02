@@ -50,9 +50,8 @@ This is the finding that changed the skill.
 | Rivermist-Hollow-Vanderlin | `vanderlin.dme` | `modular_alizeria/`, `modular_ratwood/`, `modular_rmh/` | flat per-file `#include` list |
 | Twilight-Axis | `roguetown.dme` | `modular/`, `modular_deserttown/`, `modular_twilight_axis/` | flat per-file `#include` list |
 | Ratwood-2.0 | `roguetown.dme` | ten roots, including `modular_azurepeak/`, `modular_causticcove/`, `modular_ochrevalley/`, `modular_twilight_axis/` | flat per-file `#include` list |
-| Lands-of-Alizeria | `roguetown.dme` | six roots | flat per-file `#include` list |
 
-`_module.dm` exists in **none** of the four. A downstream fork of an aggregator codebase does not inherit the aggregator.
+`_module.dm` exists in **none** of the three. A downstream fork of an aggregator codebase does not inherit the aggregator.
 
 Consequences already applied to the skill: step 4 of the workflow now says to grep the `.dme` rather than assume a mechanism, and `fork-comparison.md` carries a rarity warning under its include-style recommendation. The aggregator's *design* argument (one stable `.dme` line versus thousands of churned ones) is untouched — that remains `[reasoned]` and sound; only the claim about how commonly you will meet it was overstated.
 
@@ -68,7 +67,9 @@ The workflow told you to check "`git log -1 -- <dir>` and recent commit counts".
 
 **Commit count separates the live root from the fossils by a factor of 4.5; the last-commit dates all fall inside a single day and separate nothing.** Half of the original advice was actively misleading, so step 1 now leads with the count and ships the one-line ranking command. Ratwood-2.0's ten roots make the same point at greater scale: on a fork that old, "which folder is current" is not answerable by looking.
 
-**And the count has its own failure mode, found by `claims.yaml` on the first automated run.** Lands-of-Alizeria (`roguetown.dme`) carries six roots whose commit counts are 3 / 2 / 2 / 1 / 1 / 1 — no margin at all — because the repository's entire history is 32 commits beginning 2026-04-08. It is not a shallow clone; the history was squashed or the repo re-initialised. File counts were checked as a fallback and were no better (74 / 66 / 26 / 18 / 13 / 8, a 1.12× lead). Step 1 therefore now requires roughly a 2× margin before trusting the ranking, and tells the agent to stop and ask rather than pick the largest of several small numbers. The automated check reports this repo as DRIFT permanently and correctly: the heuristic genuinely does not apply there.
+**And the count has its own failure mode, found by `claims.yaml` on the first automated run.** A repository whose entire history is a few dozen commits — squashed, or re-initialised — gives every root a count of 1-3 and no margin at all. File counts were checked as a fallback and were no better. Step 1 therefore requires roughly a 2× margin before trusting the ranking, and tells the agent to stop and ask rather than pick the largest of several small numbers. The automated check reports such a repo as DRIFT permanently and correctly: the heuristic genuinely does not apply there.
+
+**The second fallback — rank by `#include` lines — was then verified on a fork that matters.** Ratwood-2.0 (`roguetown.dme`, 27,349 commits, ten roots, measured 2026-09-01) separates three kinds of root that a directory listing cannot: live (`modular` 128 `.dm` files / 126 includes; `modular_azurepeak` 64 / 64), **abandoned in place** (`modular_helmsguard` 24 files but **1** include — mid-table by size, near-dead in fact), and empty shells (`modular_causticcove`, `modular_ochrevalley`, `modular_stonehedge`, all 0 / 0). Only the include column catches the middle case. This evidence deliberately comes from a live, long-history fork rather than the squashed one that first exposed the gap — a dead fork-of-a-fork is a poor witness for a rule meant to hold on maintained repositories.
 
 ## What is still unverified
 

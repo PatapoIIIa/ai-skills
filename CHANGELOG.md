@@ -57,6 +57,18 @@ backend data through `useEffect`; lazy `useState` initialisers; functional
 advice from general React sources — measured against a live fork, none of it
 has any referent in tgui.
 
+**Modular-root detection gained a fallback.** When commit counts cannot rank the roots (a squashed
+or re-initialised repo gives every root 1-3 commits), rank by `#include` lines in the `.dme`
+instead: a file on disk can be dead, an include is load-bearing. Verified on a ten-root fork with
+27k commits, where it separates live roots from one that ships 24 `.dm` files with a single include
+and from three empty shells. Also records the trap that `.dme` files use backslashes, so a grep for
+`modular/` silently returns zero.
+
+**`scripts/verify_claims.py` gained `--exclude NAME`** for dead or unrepresentative checkouts, and
+`byond-ss13-coding` gained `scripts/fingerprint.sh` — workflow step 2 (identify the codebase family)
+now ships as a runnable command rather than a description, since it is mechanical and every later
+step depends on it.
+
 **Semantic bases marked stale.** Every `ai_navigation_*` base now carries a
 dated STALE banner. They remain routing aids; do not quote identifiers from
 them without grepping the code. (Bases are not shipped to subscribers.)

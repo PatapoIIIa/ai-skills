@@ -462,8 +462,14 @@ def run_upstream(root, only_skill, quiet_drift):
     return report(results, quiet_drift), results
 
 
-def run(root, workspace, only_skill, quiet_drift):
+def run(root, workspace, only_skill, quiet_drift, exclude=()):
     checkouts = discover_checkouts(workspace)
+    if exclude:
+        drop = {n.lower() for n in exclude}
+        skipped = [c["name"] for c in checkouts if c["name"].lower() in drop]
+        checkouts = [c for c in checkouts if c["name"].lower() not in drop]
+        if skipped:
+            print("  excluded by --exclude: %s" % ", ".join(sorted(skipped)))
     print("Workspace: %s" % workspace)
     print("Source: LOCAL CHECKOUTS. These are clones, not the canonical upstreams --")
     print("their provenance is printed so no reading of this report has to assume it.")
@@ -628,6 +634,14 @@ def main():
     parser.add_argument("--workspace", default=None,
                         help="directory holding the checkouts (default: the repo's parent)")
     parser.add_argument("--skill", default=None, help="check only this skill's claims")
+    parser.add_argument("--exclude", action="append", default=[], metavar="NAME",
+                        help="skip a checkout by folder name; repeatable. For dead, archived "
+                             "or otherwise unrepresentative forks -- a squashed fork-of-a-fork "
+                             "nobody maintains will DRIFT forever on heuristics that are only "
+                             "meant to hold for live repositories, and a permanent red nobody "
+                             "acts on is worse than no check. This is a flag rather than a "
+                             "claims.yaml field on purpose: which clones sit on this disk is "
+                             "machine state, and claims.yaml ships to subscribers.")
     parser.add_argument("--json", default=None, help="also write the full result set here")
     parser.add_argument("--quiet-drift", action="store_true",
                         help="exit non-zero only on BROKEN, not on DRIFT")
@@ -659,7 +673,7 @@ def main():
     if args.source == "upstream":
         code, results = run_upstream(root, args.skill, args.quiet_drift)
     else:
-        code, results = run(root, workspace, args.skill, args.quiet_drift)
+        code, results = run(root, workspace, args.skill, args.quiet_drift, args.exclude)
     if args.every_commits or args.max_age_days:
         save_state(state_dir, commits)
 
